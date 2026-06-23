@@ -24,9 +24,104 @@ const findUtilitiesBtn = document.getElementById('findUtilitiesBtn');
 let boundaryGeoJson = null;
 let utilitiesGeoJson = null;
 let statePlaneZones = [];
+let countyBoundaries = [];
 let projectionOptions = [];
 
 map.on('load', async () => {
+    addMapLayers();
+
+    try {
+        await loadProjectionOptions();
+        setupProjectionSearch();
+        await loadStatePlaneZones();
+        await loadCountyBoundaries();
+        resultsDiv.textContent = 'Ready. Upload a KML/KMZ boundary.';
+    } catch (error) {
+        console.error(error);
+        resultsDiv.textContent = `Startup Error: ${error.message}`;
+    }
+});
+
+kmlFileInput.addEventListener('change', async () => {
+    const file = kmlFileInput.files[0];
+    if (!file) return;
+
+    try {
+        resultsDiv.textContent = 'Reading boundary file...';
+
+        const kmlText = await readKmlOrKmz(file);
+        boundaryGeoJson = parseKmlPolygons(kmlText);
+        utilitiesGeoJson = null;
+
+        map.getSource('utilities').setData(emptyFeatureCollection());
+
+        if (boundaryGeoJson.features.length === 0) {
+            resultsDiv.textContent = 'No polygon area shapes found in this file.';
+            return;
+        }
+
+        map.getSource('boundary').setData(boundaryGeoJson);
+        zoomToGeoJson(boundaryGeoJson);
+
+        const detectedZone = detectStatePlaneZone(boundaryGeoJson);
+        const detectedCounty = detectCounty(boundaryGeoJson);
+        const projection = chooseProjectionFromZone(detectedZone);
+        setProjectionSearchValue(projection);
+
+        const zoneText = detectedZone
+            ? `Detected Zone: ${detectedZone.zoneName}\nFIPS: ${detectedZone.fipsZone}\nSuggested Projection: ${projection.label}`
+            : `No State Plane zone detected.\nSuggested Projection: ${projection.label}`;
+
+        const countyText = detectedCounty
+            ? `County: ${detectedCounty.namelsad}\nState: ${detectedCounty.state_name}\nCounty GEOID: ${detectedCounty.geoid}`
+            : 'County: Unknown';
+
+        resultsDiv.textContent =
+            `Loaded file: ${file.name}\n` +
+            `Area polygons found: ${boundaryGeoJson.features.length}\n\n` +
+            countyText +
+            `\n\n` +
+            zoneText;
+
+    } catch (error) {
+        console.error(error);
+        resultsDiv.textContent = `Error: ${error.message}`;
+    }
+});
+
+findUtilitiesBtn.addEventListener('click', async () => {
+    try {
+        const mode = getSearchMode();
+
+        if (mode === 'boundary' && (!boundaryGeoJson || boundaryGeoJson.features.length === 0)) {
+            resultsDiv.textContent = 'Upload a KML/KMZ boundary first, or switch Search Area to Current Map View.';
+            return;
+        }
+
+        resultsDiv.textContent = `Querying utility sources using ${mode === 'boundary' ? 'boundary' : 'current map view'}...`;
+
+        utilitiesGeoJson = await runUtilitySources(mode);
+        map.getSource('utilities').setData(utilitiesGeoJson);
+
+        const counts = countUtilities(utilitiesGeoJson);
+
+        resultsDiv.textContent =
+            `Utilities found:\n\n` +
+            `Transmission lines: ${counts.lines}\n` +
+            `Towers: ${counts.towers}\n` +
+            `Poles: ${counts.poles}\n` +
+            `Substations: ${counts.substations}\n` +
+            `Transformers: ${counts.transformers}\n` +
+            `Other power features: ${counts.other}\n\n` +
+            `Preview added to map.`;
+
+    } catch (error) {
+        console.error(error);
+        resultsDiv.textContent = `Utility Search Error: ${error.message}`;
+    }
+});
+
+function addMapLayers() {
     map.addSource('boundary', { type: 'geojson', data: emptyFeatureCollection() });
 
     map.addLayer({
@@ -155,93 +250,150 @@ map.on('load', async () => {
             'fill-opacity': 0.25
         }
     });
+}
 
-    try {
-        await loadProjectionOptions();
-        setupProjectionSearch();
-        await loadStatePlaneZones();
-        resultsDiv.textContent = 'Ready. Upload a KML/KMZ boundary.';
-    } catch (error) {
-        console.error(error);
-        resultsDiv.textContent = `Startup Error: ${error.message}`;
+/*
+    INTERNAL SOURCE MANAGER
+
+    UI stays simple.
+    Behind the scenes, all sources should plug into this array.
+
+    Current source:
+    - OSM / Overpass
+
+    Future sources:
+    - HIFLD transmission
+    - HIFLD substations
+    - ArcGIS FeatureServer sources
+    - user-supplied data
+*/
+const utilitySources = [
+    {
+        id: 'osm',
+        name: 'OpenStreetMap',
+        enabled: true,
+        query: queryOsmUtilities
     }
-});
 
-kmlFileInput.addEventListener('change', async () => {
-    const file = kmlFileInput.files[0];
-    if (!file) return;
+    // Future example:
+    // {
+    //     id: 'hifld-transmission',
+    //     name: 'HIFLD Transmission',
+    //     enabled: true,
+    //     query: queryHifldTransmission
+    // }
+];
 
-    try {
-        resultsDiv.textContent = 'Reading boundary file...';
+async function runUtilitySources(mode) {
+    const sourceResults = [];
 
-        const kmlText = await readKmlOrKmz(file);
-        boundaryGeoJson = parseKmlPolygons(kmlText);
-        utilitiesGeoJson = null;
+    for (const source of utilitySources) {
+        if (!source.enabled) continue;
 
-        map.getSource('utilities').setData(emptyFeatureCollection());
+        resultsDiv.textContent = `Querying ${source.name} using ${mode === 'boundary' ? 'boundary' : 'current map view'}...`;
 
-        if (boundaryGeoJson.features.length === 0) {
-            resultsDiv.textContent = 'No polygon area shapes found in this file.';
-            return;
+        const result = await source.query(mode);
+        sourceResults.push(result);
+    }
+
+    const merged = mergeFeatureCollections(sourceResults);
+    const deduped = dedupeUtilityFeatures(merged);
+
+    return deduped;
+}
+
+async function queryOsmUtilities(mode) {
+    const overpassJson = mode === 'boundary'
+        ? await queryOverpassByBoundary(boundaryGeoJson)
+        : await queryOverpassByMapView();
+
+    const geojson = overpassToGeoJson(overpassJson);
+
+    geojson.features.forEach(feature => {
+        feature.properties.source = 'OSM';
+    });
+
+    return geojson;
+}
+
+function mergeFeatureCollections(collections) {
+    const features = [];
+
+    collections.forEach(collection => {
+        if (!collection || !Array.isArray(collection.features)) return;
+        features.push(...collection.features);
+    });
+
+    return {
+        type: 'FeatureCollection',
+        features
+    };
+}
+
+function dedupeUtilityFeatures(geojson) {
+    const seen = new Set();
+    const features = [];
+
+    geojson.features.forEach(feature => {
+        const key = makeFeatureKey(feature);
+
+        if (!seen.has(key)) {
+            seen.add(key);
+            features.push(feature);
         }
+    });
 
-        map.getSource('boundary').setData(boundaryGeoJson);
-        zoomToGeoJson(boundaryGeoJson);
+    return {
+        type: 'FeatureCollection',
+        features
+    };
+}
 
-        const detectedZone = detectStatePlaneZone(boundaryGeoJson);
-        const projection = chooseProjectionFromZone(detectedZone);
-        setProjectionSearchValue(projection);
+function makeFeatureKey(feature) {
+    const geometry = feature.geometry;
+    const power = feature.properties.power || 'unknown';
+    const sourceId = feature.properties.id || feature.properties.osm_id || '';
 
-        const zoneText = detectedZone
-            ? `Detected Zone: ${detectedZone.zoneName}\nFIPS: ${detectedZone.fipsZone}\nSuggested Projection: ${projection.label}`
-            : `No State Plane zone detected.\nSuggested Projection: ${projection.label}`;
-
-        resultsDiv.textContent =
-            `Loaded file: ${file.name}\n` +
-            `Area polygons found: ${boundaryGeoJson.features.length}\n\n` +
-            zoneText;
-
-    } catch (error) {
-        console.error(error);
-        resultsDiv.textContent = `Error: ${error.message}`;
+    if (sourceId) {
+        return `${power}|${sourceId}`;
     }
-});
 
-findUtilitiesBtn.addEventListener('click', async () => {
-    try {
-        const mode = getSearchMode();
-
-        if (mode === 'boundary' && (!boundaryGeoJson || boundaryGeoJson.features.length === 0)) {
-            resultsDiv.textContent = 'Upload a KML/KMZ boundary first, or switch Search Area to Current Map View.';
-            return;
-        }
-
-        resultsDiv.textContent = `Querying Overpass using ${mode === 'boundary' ? 'boundary' : 'current map view'}...`;
-
-        const overpassJson = mode === 'boundary'
-            ? await queryOverpassByBoundary(boundaryGeoJson)
-            : await queryOverpassByMapView();
-
-        utilitiesGeoJson = overpassToGeoJson(overpassJson);
-        map.getSource('utilities').setData(utilitiesGeoJson);
-
-        const counts = countUtilities(utilitiesGeoJson);
-
-        resultsDiv.textContent =
-            `Utilities found:\n\n` +
-            `Transmission lines: ${counts.lines}\n` +
-            `Towers: ${counts.towers}\n` +
-            `Poles: ${counts.poles}\n` +
-            `Substations: ${counts.substations}\n` +
-            `Transformers: ${counts.transformers}\n` +
-            `Other power features: ${counts.other}\n\n` +
-            `Preview added to map.`;
-
-    } catch (error) {
-        console.error(error);
-        resultsDiv.textContent = `Overpass Error: ${error.message}`;
+    if (geometry.type === 'Point') {
+        const lon = Number(geometry.coordinates[0]).toFixed(6);
+        const lat = Number(geometry.coordinates[1]).toFixed(6);
+        return `${power}|point|${lon}|${lat}`;
     }
-});
+
+    if (geometry.type === 'LineString') {
+        const first = geometry.coordinates[0];
+        const last = geometry.coordinates[geometry.coordinates.length - 1];
+
+        return [
+            power,
+            geometry.type,
+            first[0].toFixed(5),
+            first[1].toFixed(5),
+            last[0].toFixed(5),
+            last[1].toFixed(5),
+            geometry.coordinates.length
+        ].join('|');
+    }
+
+    if (geometry.type === 'Polygon') {
+        const ring = geometry.coordinates[0];
+        const first = ring[0];
+
+        return [
+            power,
+            geometry.type,
+            first[0].toFixed(5),
+            first[1].toFixed(5),
+            ring.length
+        ].join('|');
+    }
+
+    return `${power}|${JSON.stringify(geometry)}`;
+}
 
 async function loadProjectionOptions() {
     const response = await fetch('data/projections.json');
@@ -306,6 +458,50 @@ async function loadStatePlaneZones() {
     const kmlText = await response.text();
     statePlaneZones = parseStatePlaneZoneKml(kmlText);
     console.log(`Loaded ${statePlaneZones.length} State Plane zones.`);
+}
+
+async function loadCountyBoundaries() {
+    const response = await fetch('data/us_county_boundaries.kml');
+
+    if (!response.ok) {
+        throw new Error('Could not load data/us_county_boundaries.kml');
+    }
+
+    const kmlText = await response.text();
+    countyBoundaries = parseCountyKml(kmlText);
+    console.log(`Loaded ${countyBoundaries.length} county polygons.`);
+}
+
+function parseCountyKml(kmlText) {
+    const xmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
+    const placemarks = xmlDoc.getElementsByTagName('Placemark');
+    const counties = [];
+
+    for (let i = 0; i < placemarks.length; i++) {
+        const placemark = placemarks[i];
+        const polygonNode = placemark.getElementsByTagName('Polygon')[0];
+        if (!polygonNode) continue;
+
+        const coordinatesNode = polygonNode.getElementsByTagName('coordinates')[0];
+        if (!coordinatesNode) continue;
+
+        const coordinates = parseKmlCoordinateText(coordinatesNode.textContent);
+        if (coordinates.length < 4) continue;
+
+        closeRingIfNeeded(coordinates);
+
+        counties.push({
+            geoid: getSimpleDataValue(placemark, 'geoid') || getSimpleDataValue(placemark, 'GEOID'),
+            countyfp: getSimpleDataValue(placemark, 'countyfp') || getSimpleDataValue(placemark, 'COUNTYFP'),
+            name: getSimpleDataValue(placemark, 'name') || getSimpleDataValue(placemark, 'NAME') || getPlacemarkName(placemark),
+            namelsad: getSimpleDataValue(placemark, 'namelsad') || getSimpleDataValue(placemark, 'NAMELSAD') || getPlacemarkName(placemark),
+            stusab: getSimpleDataValue(placemark, 'stusab') || getSimpleDataValue(placemark, 'STUSAB'),
+            state_name: getSimpleDataValue(placemark, 'state_name') || getSimpleDataValue(placemark, 'STATE_NAME'),
+            coordinates
+        });
+    }
+
+    return counties;
 }
 
 function chooseProjectionFromZone(zone) {
@@ -504,13 +700,19 @@ function overpassToGeoJson(overpassJson) {
         if (element.type === 'node' && Number.isFinite(element.lon) && Number.isFinite(element.lat)) {
             nodes.set(element.id, {
                 coordinates: [element.lon, element.lat],
-                tags: element.tags || {}
+                tags: {
+                    ...(element.tags || {}),
+                    osm_id: element.id
+                }
             });
         }
     });
 
     overpassJson.elements.forEach(element => {
-        const tags = element.tags || {};
+        const tags = {
+            ...(element.tags || {}),
+            osm_id: element.id
+        };
 
         if (element.type === 'node' && tags.power) {
             features.push({
@@ -610,6 +812,18 @@ function detectStatePlaneZone(boundaryGeoJson) {
 
     for (const zone of statePlaneZones) {
         if (pointInPolygon(centroid, zone.coordinates)) return zone;
+    }
+
+    return null;
+}
+
+function detectCounty(boundaryGeoJson) {
+    if (!countyBoundaries.length) return null;
+
+    const centroid = getGeoJsonCentroid(boundaryGeoJson);
+
+    for (const county of countyBoundaries) {
+        if (pointInPolygon(centroid, county.coordinates)) return county;
     }
 
     return null;
