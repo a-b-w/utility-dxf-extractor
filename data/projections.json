@@ -1,0 +1,856 @@
+[
+  {
+    "label": "WGS84 - EPSG:4326",
+    "epsg": "4326",
+    "fips": "",
+    "zone": "WGS84",
+    "search": "wgs84 epsg 4326 latitude longitude lat lon"
+  },
+  {
+    "label": "Hawaii Zone 1 - FIPS 5101 - EPSG:26961",
+    "epsg": "26961",
+    "fips": "5101",
+    "zone": "Hawaii Zone 1",
+    "search": "hawaii zone 1 hi_1 fips 5101 epsg 26961"
+  },
+  {
+    "label": "Hawaii Zone 2 - FIPS 5102 - EPSG:26962",
+    "epsg": "26962",
+    "fips": "5102",
+    "zone": "Hawaii Zone 2",
+    "search": "hawaii zone 2 hi_2 fips 5102 epsg 26962"
+  },
+  {
+    "label": "Hawaii Zone 3 - FIPS 5103 - EPSG:26963",
+    "epsg": "26963",
+    "fips": "5103",
+    "zone": "Hawaii Zone 3",
+    "search": "hawaii zone 3 hi_3 fips 5103 epsg 26963"
+  },
+  {
+    "label": "Hawaii Zone 4 - FIPS 5104 - EPSG:26964",
+    "epsg": "26964",
+    "fips": "5104",
+    "zone": "Hawaii Zone 4",
+    "search": "hawaii zone 4 hi_4 fips 5104 epsg 26964"
+  },
+  {
+    "label": "Hawaii Zone 5 - FIPS 5105 - EPSG:26965",
+    "epsg": "26965",
+    "fips": "5105",
+    "zone": "Hawaii Zone 5",
+    "search": "hawaii zone 5 hi_5 fips 5105 epsg 26965"
+  },
+  {
+    "label": "Indiana East - FIPS 1301 - EPSG:26973",
+    "epsg": "26973",
+    "fips": "1301",
+    "zone": "Indiana East",
+    "search": "indiana east in_e fips 1301 epsg 26973"
+  },
+  {
+    "label": "Indiana West - FIPS 1302 - EPSG:26974",
+    "epsg": "26974",
+    "fips": "1302",
+    "zone": "Indiana West",
+    "search": "indiana west in_w fips 1302 epsg 26974"
+  },
+  {
+    "label": "Iowa North - FIPS 1401 - EPSG:26975",
+    "epsg": "26975",
+    "fips": "1401",
+    "zone": "Iowa North",
+    "search": "iowa north ia_n fips 1401 epsg 26975"
+  },
+  {
+    "label": "Iowa South - FIPS 1402 - EPSG:26976",
+    "epsg": "26976",
+    "fips": "1402",
+    "zone": "Iowa South",
+    "search": "iowa south ia_s fips 1402 epsg 26976"
+  },
+  {
+    "label": "Kansas North - FIPS 1501 - EPSG:26977",
+    "epsg": "26977",
+    "fips": "1501",
+    "zone": "Kansas North",
+    "search": "kansas north ks_n fips 1501 epsg 26977"
+  },
+  {
+    "label": "Arizona East - FIPS 201 - EPSG:26948",
+    "epsg": "26948",
+    "fips": "201",
+    "zone": "Arizona East",
+    "search": "arizona east az_e fips 201 epsg 26948"
+  },
+  {
+    "label": "Kansas South - FIPS 1502 - EPSG:26978",
+    "epsg": "26978",
+    "fips": "1502",
+    "zone": "Kansas South",
+    "search": "kansas south ks_s fips 1502 epsg 26978"
+  },
+  {
+    "label": "Arizona Central - FIPS 202 - EPSG:26949",
+    "epsg": "26949",
+    "fips": "202",
+    "zone": "Arizona Central",
+    "search": "arizona central az_c fips 202 epsg 26949"
+  },
+  {
+    "label": "Kentucky North - FIPS 1601 - EPSG:2246",
+    "epsg": "2246",
+    "fips": "1601",
+    "zone": "Kentucky North",
+    "search": "kentucky north ky_n fips 1601 epsg 2246"
+  },
+  {
+    "label": "Arizona West - FIPS 203 - EPSG:26950",
+    "epsg": "26950",
+    "fips": "203",
+    "zone": "Arizona West",
+    "search": "arizona west az_w fips 203 epsg 26950"
+  },
+  {
+    "label": "Kentucky South - FIPS 1602 - EPSG:26980",
+    "epsg": "26980",
+    "fips": "1602",
+    "zone": "Kentucky South",
+    "search": "kentucky south ky_s fips 1602 epsg 26980"
+  },
+  {
+    "label": "Arkansas North - FIPS 301 - EPSG:26951",
+    "epsg": "26951",
+    "fips": "301",
+    "zone": "Arkansas North",
+    "search": "arkansas north ar_n fips 301 epsg 26951"
+  },
+  {
+    "label": "Louisiana North - FIPS 1701 - EPSG:26981",
+    "epsg": "26981",
+    "fips": "1701",
+    "zone": "Louisiana North",
+    "search": "louisiana north la_n fips 1701 epsg 26981"
+  },
+  {
+    "label": "Arkansas South - FIPS 302 - EPSG:26952",
+    "epsg": "26952",
+    "fips": "302",
+    "zone": "Arkansas South",
+    "search": "arkansas south ar_s fips 302 epsg 26952"
+  },
+  {
+    "label": "Louisiana South - FIPS 1702 - EPSG:26982",
+    "epsg": "26982",
+    "fips": "1702",
+    "zone": "Louisiana South",
+    "search": "louisiana south la_s fips 1702 epsg 26982"
+  },
+  {
+    "label": "California Zone 1 - FIPS 401 - EPSG:26941",
+    "epsg": "26941",
+    "fips": "401",
+    "zone": "California Zone 1",
+    "search": "california zone 1 ca_1 fips 401 epsg 26941"
+  },
+  {
+    "label": "California Zone 2 - FIPS 402 - EPSG:26942",
+    "epsg": "26942",
+    "fips": "402",
+    "zone": "California Zone 2",
+    "search": "california zone 2 ca_2 fips 402 epsg 26942"
+  },
+  {
+    "label": "Maine East - FIPS 1801 - EPSG:26983",
+    "epsg": "26983",
+    "fips": "1801",
+    "zone": "Maine East",
+    "search": "maine east me_e fips 1801 epsg 26983"
+  },
+  {
+    "label": "California Zone 3 - FIPS 403 - EPSG:26943",
+    "epsg": "26943",
+    "fips": "403",
+    "zone": "California Zone 3",
+    "search": "california zone 3 ca_3 fips 403 epsg 26943"
+  },
+  {
+    "label": "Maine West - FIPS 1802 - EPSG:26984",
+    "epsg": "26984",
+    "fips": "1802",
+    "zone": "Maine West",
+    "search": "maine west me_w fips 1802 epsg 26984"
+  },
+  {
+    "label": "California Zone 4 - FIPS 404 - EPSG:26944",
+    "epsg": "26944",
+    "fips": "404",
+    "zone": "California Zone 4",
+    "search": "california zone 4 ca_4 fips 404 epsg 26944"
+  },
+  {
+    "label": "Maryland - FIPS 1900 - EPSG:26985",
+    "epsg": "26985",
+    "fips": "1900",
+    "zone": "Maryland",
+    "search": "maryland md fips 1900 epsg 26985"
+  },
+  {
+    "label": "California Zone 5 - FIPS 405 - EPSG:26945",
+    "epsg": "26945",
+    "fips": "405",
+    "zone": "California Zone 5",
+    "search": "california zone 5 ca_5 fips 405 epsg 26945"
+  },
+  {
+    "label": "California Zone 6 - FIPS 406 - EPSG:26946",
+    "epsg": "26946",
+    "fips": "406",
+    "zone": "California Zone 6",
+    "search": "california zone 6 ca_6 fips 406 epsg 26946"
+  },
+  {
+    "label": "Massachusetts Island - FIPS 2002 - EPSG:26987",
+    "epsg": "26987",
+    "fips": "2002",
+    "zone": "Massachusetts Island",
+    "search": "massachusetts island ma_i fips 2002 epsg 26987"
+  },
+  {
+    "label": "Colorado North - FIPS 501 - EPSG:26953",
+    "epsg": "26953",
+    "fips": "501",
+    "zone": "Colorado North",
+    "search": "colorado north co_n fips 501 epsg 26953"
+  },
+  {
+    "label": "Colorado Central - FIPS 502 - EPSG:26954",
+    "epsg": "26954",
+    "fips": "502",
+    "zone": "Colorado Central",
+    "search": "colorado central co_c fips 502 epsg 26954"
+  },
+  {
+    "label": "Colorado South - FIPS 503 - EPSG:26955",
+    "epsg": "26955",
+    "fips": "503",
+    "zone": "Colorado South",
+    "search": "colorado south co_s fips 503 epsg 26955"
+  },
+  {
+    "label": "Michigan North - FIPS 2111 - EPSG:26988",
+    "epsg": "26988",
+    "fips": "2111",
+    "zone": "Michigan North",
+    "search": "michigan north mi_n fips 2111 epsg 26988"
+  },
+  {
+    "label": "Connecticut - FIPS 600 - EPSG:26956",
+    "epsg": "26956",
+    "fips": "600",
+    "zone": "Connecticut",
+    "search": "connecticut ct fips 600 epsg 26956"
+  },
+  {
+    "label": "Michigan Central - FIPS 2112 - EPSG:26989",
+    "epsg": "26989",
+    "fips": "2112",
+    "zone": "Michigan Central",
+    "search": "michigan central mi_c fips 2112 epsg 26989"
+  },
+  {
+    "label": "Delaware - FIPS 700 - EPSG:26957",
+    "epsg": "26957",
+    "fips": "700",
+    "zone": "Delaware",
+    "search": "delaware de fips 700 epsg 26957"
+  },
+  {
+    "label": "Michigan South - FIPS 2113 - EPSG:26990",
+    "epsg": "26990",
+    "fips": "2113",
+    "zone": "Michigan South",
+    "search": "michigan south mi_s fips 2113 epsg 26990"
+  },
+  {
+    "label": "Florida North - FIPS 903 - EPSG:26960",
+    "epsg": "26960",
+    "fips": "903",
+    "zone": "Florida North",
+    "search": "florida north fl_n fips 903 epsg 26960"
+  },
+  {
+    "label": "Minnesota North - FIPS 2201 - EPSG:26991",
+    "epsg": "26991",
+    "fips": "2201",
+    "zone": "Minnesota North",
+    "search": "minnesota north mn_n fips 2201 epsg 26991"
+  },
+  {
+    "label": "Florida East - FIPS 901 - EPSG:26958",
+    "epsg": "26958",
+    "fips": "901",
+    "zone": "Florida East",
+    "search": "florida east fl_e fips 901 epsg 26958"
+  },
+  {
+    "label": "Minnesota Central - FIPS 2202 - EPSG:26992",
+    "epsg": "26992",
+    "fips": "2202",
+    "zone": "Minnesota Central",
+    "search": "minnesota central mn_c fips 2202 epsg 26992"
+  },
+  {
+    "label": "Florida West - FIPS 902 - EPSG:26959",
+    "epsg": "26959",
+    "fips": "902",
+    "zone": "Florida West",
+    "search": "florida west fl_w fips 902 epsg 26959"
+  },
+  {
+    "label": "Minnesota South - FIPS 2203 - EPSG:26993",
+    "epsg": "26993",
+    "fips": "2203",
+    "zone": "Minnesota South",
+    "search": "minnesota south mn_s fips 2203 epsg 26993"
+  },
+  {
+    "label": "Georgia East - FIPS 1001 - EPSG:26966",
+    "epsg": "26966",
+    "fips": "1001",
+    "zone": "Georgia East",
+    "search": "georgia east ga_e fips 1001 epsg 26966"
+  },
+  {
+    "label": "Mississippi East - FIPS 2301 - EPSG:26994",
+    "epsg": "26994",
+    "fips": "2301",
+    "zone": "Mississippi East",
+    "search": "mississippi east ms_e fips 2301 epsg 26994"
+  },
+  {
+    "label": "Georgia West - FIPS 1002 - EPSG:26967",
+    "epsg": "26967",
+    "fips": "1002",
+    "zone": "Georgia West",
+    "search": "georgia west ga_w fips 1002 epsg 26967"
+  },
+  {
+    "label": "Mississippi West - FIPS 2302 - EPSG:26995",
+    "epsg": "26995",
+    "fips": "2302",
+    "zone": "Mississippi West",
+    "search": "mississippi west ms_w fips 2302 epsg 26995"
+  },
+  {
+    "label": "Missouri East - FIPS 2401 - EPSG:26996",
+    "epsg": "26996",
+    "fips": "2401",
+    "zone": "Missouri East",
+    "search": "missouri east mo_e fips 2401 epsg 26996"
+  },
+  {
+    "label": "Missouri Central - FIPS 2402 - EPSG:26997",
+    "epsg": "26997",
+    "fips": "2402",
+    "zone": "Missouri Central",
+    "search": "missouri central mo_c fips 2402 epsg 26997"
+  },
+  {
+    "label": "Missouri West - FIPS 2403 - EPSG:26998",
+    "epsg": "26998",
+    "fips": "2403",
+    "zone": "Missouri West",
+    "search": "missouri west mo_w fips 2403 epsg 26998"
+  },
+  {
+    "label": "South Dakota North - FIPS 4001 - EPSG:32134",
+    "epsg": "32134",
+    "fips": "4001",
+    "zone": "South Dakota North",
+    "search": "south dakota north sd_n fips 4001 epsg 32134"
+  },
+  {
+    "label": "South Dakota South - FIPS 4002 - EPSG:32135",
+    "epsg": "32135",
+    "fips": "4002",
+    "zone": "South Dakota South",
+    "search": "south dakota south sd_s fips 4002 epsg 32135"
+  },
+  {
+    "label": "Tennessee - FIPS 4100 - EPSG:32136",
+    "epsg": "32136",
+    "fips": "4100",
+    "zone": "Tennessee",
+    "search": "tennessee tn fips 4100 epsg 32136"
+  },
+  {
+    "label": "Montana - FIPS 2500 - EPSG:32100",
+    "epsg": "32100",
+    "fips": "2500",
+    "zone": "Montana",
+    "search": "montana mt fips 2500 epsg 32100"
+  },
+  {
+    "label": "Texas North - FIPS 4201 - EPSG:32137",
+    "epsg": "32137",
+    "fips": "4201",
+    "zone": "Texas North",
+    "search": "texas north tx_n fips 4201 epsg 32137"
+  },
+  {
+    "label": "Texas North Central - FIPS 4202 - EPSG:32138",
+    "epsg": "32138",
+    "fips": "4202",
+    "zone": "Texas North Central",
+    "search": "texas north central tx_nc fips 4202 epsg 32138"
+  },
+  {
+    "label": "Texas Central - FIPS 4203 - EPSG:32139",
+    "epsg": "32139",
+    "fips": "4203",
+    "zone": "Texas Central",
+    "search": "texas central tx_c fips 4203 epsg 32139"
+  },
+  {
+    "label": "Nebraska - FIPS 2600 - EPSG:32104",
+    "epsg": "32104",
+    "fips": "2600",
+    "zone": "Nebraska",
+    "search": "nebraska ne fips 2600 epsg 32104"
+  },
+  {
+    "label": "Texas South Central - FIPS 4204 - EPSG:32140",
+    "epsg": "32140",
+    "fips": "4204",
+    "zone": "Texas South Central",
+    "search": "texas south central tx_sc fips 4204 epsg 32140"
+  },
+  {
+    "label": "Nevada East - FIPS 2701 - EPSG:32107",
+    "epsg": "32107",
+    "fips": "2701",
+    "zone": "Nevada East",
+    "search": "nevada east nv_e fips 2701 epsg 32107"
+  },
+  {
+    "label": "Texas South - FIPS 4205 - EPSG:32141",
+    "epsg": "32141",
+    "fips": "4205",
+    "zone": "Texas South",
+    "search": "texas south tx_s fips 4205 epsg 32141"
+  },
+  {
+    "label": "Nevada Central - FIPS 2702 - EPSG:32108",
+    "epsg": "32108",
+    "fips": "2702",
+    "zone": "Nevada Central",
+    "search": "nevada central nv_c fips 2702 epsg 32108"
+  },
+  {
+    "label": "Utah North - FIPS 4301 - EPSG:32142",
+    "epsg": "32142",
+    "fips": "4301",
+    "zone": "Utah North",
+    "search": "utah north ut_n fips 4301 epsg 32142"
+  },
+  {
+    "label": "Nevada West - FIPS 2703 - EPSG:32109",
+    "epsg": "32109",
+    "fips": "2703",
+    "zone": "Nevada West",
+    "search": "nevada west nv_w fips 2703 epsg 32109"
+  },
+  {
+    "label": "Utah Central - FIPS 4302 - EPSG:32143",
+    "epsg": "32143",
+    "fips": "4302",
+    "zone": "Utah Central",
+    "search": "utah central ut_c fips 4302 epsg 32143"
+  },
+  {
+    "label": "New Hampshire - FIPS 2800 - EPSG:32110",
+    "epsg": "32110",
+    "fips": "2800",
+    "zone": "New Hampshire",
+    "search": "new hampshire nh fips 2800 epsg 32110"
+  },
+  {
+    "label": "Utah South - FIPS 4303 - EPSG:32144",
+    "epsg": "32144",
+    "fips": "4303",
+    "zone": "Utah South",
+    "search": "utah south ut_s fips 4303 epsg 32144"
+  },
+  {
+    "label": "New Jersey - FIPS 2900 - EPSG:32111",
+    "epsg": "32111",
+    "fips": "2900",
+    "zone": "New Jersey",
+    "search": "new jersey nj fips 2900 epsg 32111"
+  },
+  {
+    "label": "Vermont - FIPS 4400 - EPSG:32145",
+    "epsg": "32145",
+    "fips": "4400",
+    "zone": "Vermont",
+    "search": "vermont vt fips 4400 epsg 32145"
+  },
+  {
+    "label": "New Mexico East - FIPS 3001 - EPSG:32112",
+    "epsg": "32112",
+    "fips": "3001",
+    "zone": "New Mexico East",
+    "search": "new mexico east nm_e fips 3001 epsg 32112"
+  },
+  {
+    "label": "Virginia North - FIPS 4501 - EPSG:32146",
+    "epsg": "32146",
+    "fips": "4501",
+    "zone": "Virginia North",
+    "search": "virginia north va_n fips 4501 epsg 32146"
+  },
+  {
+    "label": "New Mexico Central - FIPS 3002 - EPSG:32113",
+    "epsg": "32113",
+    "fips": "3002",
+    "zone": "New Mexico Central",
+    "search": "new mexico central nm_c fips 3002 epsg 32113"
+  },
+  {
+    "label": "Virginia South - FIPS 4502 - EPSG:32147",
+    "epsg": "32147",
+    "fips": "4502",
+    "zone": "Virginia South",
+    "search": "virginia south va_s fips 4502 epsg 32147"
+  },
+  {
+    "label": "New Mexico West - FIPS 3003 - EPSG:32114",
+    "epsg": "32114",
+    "fips": "3003",
+    "zone": "New Mexico West",
+    "search": "new mexico west nm_w fips 3003 epsg 32114"
+  },
+  {
+    "label": "Washington North - FIPS 4601 - EPSG:32148",
+    "epsg": "32148",
+    "fips": "4601",
+    "zone": "Washington North",
+    "search": "washington north wa_n fips 4601 epsg 32148"
+  },
+  {
+    "label": "New York East - FIPS 3101 - EPSG:32115",
+    "epsg": "32115",
+    "fips": "3101",
+    "zone": "New York East",
+    "search": "new york east ny_e fips 3101 epsg 32115"
+  },
+  {
+    "label": "New York Central - FIPS 3102 - EPSG:32116",
+    "epsg": "32116",
+    "fips": "3102",
+    "zone": "New York Central",
+    "search": "new york central ny_c fips 3102 epsg 32116"
+  },
+  {
+    "label": "West Virginia North - FIPS 4701 - EPSG:32150",
+    "epsg": "32150",
+    "fips": "4701",
+    "zone": "West Virginia North",
+    "search": "west virginia north wv_n fips 4701 epsg 32150"
+  },
+  {
+    "label": "New York West - FIPS 3103 - EPSG:32117",
+    "epsg": "32117",
+    "fips": "3103",
+    "zone": "New York West",
+    "search": "new york west ny_w fips 3103 epsg 32117"
+  },
+  {
+    "label": "West Virginia South - FIPS 4702 - EPSG:32151",
+    "epsg": "32151",
+    "fips": "4702",
+    "zone": "West Virginia South",
+    "search": "west virginia south wv_s fips 4702 epsg 32151"
+  },
+  {
+    "label": "New York Long Island - FIPS 3104 - EPSG:32118",
+    "epsg": "32118",
+    "fips": "3104",
+    "zone": "New York Long Island",
+    "search": "new york long island ny_li fips 3104 epsg 32118"
+  },
+  {
+    "label": "Wisconsin North - FIPS 4801 - EPSG:32152",
+    "epsg": "32152",
+    "fips": "4801",
+    "zone": "Wisconsin North",
+    "search": "wisconsin north wi_n fips 4801 epsg 32152"
+  },
+  {
+    "label": "North Carolina - FIPS 3200 - EPSG:32119",
+    "epsg": "32119",
+    "fips": "3200",
+    "zone": "North Carolina",
+    "search": "north carolina nc fips 3200 epsg 32119"
+  },
+  {
+    "label": "North Dakota North - FIPS 3301 - EPSG:32120",
+    "epsg": "32120",
+    "fips": "3301",
+    "zone": "North Dakota North",
+    "search": "north dakota north nd_n fips 3301 epsg 32120"
+  },
+  {
+    "label": "Wisconsin South - FIPS 4803 - EPSG:32154",
+    "epsg": "32154",
+    "fips": "4803",
+    "zone": "Wisconsin South",
+    "search": "wisconsin south wi_s fips 4803 epsg 32154"
+  },
+  {
+    "label": "North Dakota South - FIPS 3302 - EPSG:32121",
+    "epsg": "32121",
+    "fips": "3302",
+    "zone": "North Dakota South",
+    "search": "north dakota south nd_s fips 3302 epsg 32121"
+  },
+  {
+    "label": "Wyoming East - FIPS 4901 - EPSG:32155",
+    "epsg": "32155",
+    "fips": "4901",
+    "zone": "Wyoming East",
+    "search": "wyoming east wy_e fips 4901 epsg 32155"
+  },
+  {
+    "label": "Ohio North - FIPS 3401 - EPSG:32122",
+    "epsg": "32122",
+    "fips": "3401",
+    "zone": "Ohio North",
+    "search": "ohio north oh_n fips 3401 epsg 32122"
+  },
+  {
+    "label": "Wyoming East Central - FIPS 4902 - EPSG:32156",
+    "epsg": "32156",
+    "fips": "4902",
+    "zone": "Wyoming East Central",
+    "search": "wyoming east central wy_ec fips 4902 epsg 32156"
+  },
+  {
+    "label": "Ohio South - FIPS 3402 - EPSG:32123",
+    "epsg": "32123",
+    "fips": "3402",
+    "zone": "Ohio South",
+    "search": "ohio south oh_s fips 3402 epsg 32123"
+  },
+  {
+    "label": "Oklahoma North - FIPS 3501 - EPSG:32124",
+    "epsg": "32124",
+    "fips": "3501",
+    "zone": "Oklahoma North",
+    "search": "oklahoma north ok_n fips 3501 epsg 32124"
+  },
+  {
+    "label": "Wyoming West Central - FIPS 4903 - EPSG:32157",
+    "epsg": "32157",
+    "fips": "4903",
+    "zone": "Wyoming West Central",
+    "search": "wyoming west central wy_wc fips 4903 epsg 32157"
+  },
+  {
+    "label": "Oklahoma South - FIPS 3502 - EPSG:32125",
+    "epsg": "32125",
+    "fips": "3502",
+    "zone": "Oklahoma South",
+    "search": "oklahoma south ok_s fips 3502 epsg 32125"
+  },
+  {
+    "label": "Oregon North - FIPS 3601 - EPSG:32126",
+    "epsg": "32126",
+    "fips": "3601",
+    "zone": "Oregon North",
+    "search": "oregon north or_n fips 3601 epsg 32126"
+  },
+  {
+    "label": "Wyoming West - FIPS 4904 - EPSG:32158",
+    "epsg": "32158",
+    "fips": "4904",
+    "zone": "Wyoming West",
+    "search": "wyoming west wy_w fips 4904 epsg 32158"
+  },
+  {
+    "label": "Oregon South - FIPS 3602 - EPSG:32127",
+    "epsg": "32127",
+    "fips": "3602",
+    "zone": "Oregon South",
+    "search": "oregon south or_s fips 3602 epsg 32127"
+  },
+  {
+    "label": "Pennsylvania North - FIPS 3701 - EPSG:32128",
+    "epsg": "32128",
+    "fips": "3701",
+    "zone": "Pennsylvania North",
+    "search": "pennsylvania north pa_n fips 3701 epsg 32128"
+  },
+  {
+    "label": "Pennsylvania South - FIPS 3702 - EPSG:32129",
+    "epsg": "32129",
+    "fips": "3702",
+    "zone": "Pennsylvania South",
+    "search": "pennsylvania south pa_s fips 3702 epsg 32129"
+  },
+  {
+    "label": "Rhode Island - FIPS 3800 - EPSG:32130",
+    "epsg": "32130",
+    "fips": "3800",
+    "zone": "Rhode Island",
+    "search": "rhode island ri fips 3800 epsg 32130"
+  },
+  {
+    "label": "South Carolina - FIPS 3900 - EPSG:32133",
+    "epsg": "32133",
+    "fips": "3900",
+    "zone": "South Carolina",
+    "search": "south carolina sc fips 3900 epsg 32133"
+  },
+  {
+    "label": "Alabama East - FIPS 101 - EPSG:26929",
+    "epsg": "26929",
+    "fips": "101",
+    "zone": "Alabama East",
+    "search": "alabama east al_e fips 101 epsg 26929"
+  },
+  {
+    "label": "Alabama West - FIPS 102 - EPSG:26930",
+    "epsg": "26930",
+    "fips": "102",
+    "zone": "Alabama West",
+    "search": "alabama west al_w fips 102 epsg 26930"
+  },
+  {
+    "label": "Idaho East - FIPS 1101 - EPSG:26968",
+    "epsg": "26968",
+    "fips": "1101",
+    "zone": "Idaho East",
+    "search": "idaho east id_e fips 1101 epsg 26968"
+  },
+  {
+    "label": "Idaho Central - FIPS 1102 - EPSG:26969",
+    "epsg": "26969",
+    "fips": "1102",
+    "zone": "Idaho Central",
+    "search": "idaho central id_c fips 1102 epsg 26969"
+  },
+  {
+    "label": "Idaho West - FIPS 1103 - EPSG:26970",
+    "epsg": "26970",
+    "fips": "1103",
+    "zone": "Idaho West",
+    "search": "idaho west id_w fips 1103 epsg 26970"
+  },
+  {
+    "label": "Illinois East - FIPS 1201 - EPSG:26971",
+    "epsg": "26971",
+    "fips": "1201",
+    "zone": "Illinois East",
+    "search": "illinois east il_e fips 1201 epsg 26971"
+  },
+  {
+    "label": "Washington South - FIPS 4602 - EPSG:32149",
+    "epsg": "32149",
+    "fips": "4602",
+    "zone": "Washington South",
+    "search": "washington south wa_s fips 4602 epsg 32149"
+  },
+  {
+    "label": "Wisconsin Central - FIPS 4802 - EPSG:32153",
+    "epsg": "32153",
+    "fips": "4802",
+    "zone": "Wisconsin Central",
+    "search": "wisconsin central wi_c fips 4802 epsg 32153"
+  },
+  {
+    "label": "Massachusetts Mainland - FIPS 2001 - EPSG:26986",
+    "epsg": "26986",
+    "fips": "2001",
+    "zone": "Massachusetts Mainland",
+    "search": "massachusetts mainland ma_m fips 2001 epsg 26986"
+  },
+  {
+    "label": "Illinois West - FIPS 1202 - EPSG:26972",
+    "epsg": "26972",
+    "fips": "1202",
+    "zone": "Illinois West",
+    "search": "illinois west il_w fips 1202 epsg 26972"
+  },
+  {
+    "label": "Alaska Zone 6 - FIPS 5006 - EPSG:26936",
+    "epsg": "26936",
+    "fips": "5006",
+    "zone": "Alaska Zone 6",
+    "search": "alaska zone 6 ak_6 fips 5006 epsg 26936"
+  },
+  {
+    "label": "Alaska Zone 7 - FIPS 5007 - EPSG:26937",
+    "epsg": "26937",
+    "fips": "5007",
+    "zone": "Alaska Zone 7",
+    "search": "alaska zone 7 ak_7 fips 5007 epsg 26937"
+  },
+  {
+    "label": "Alaska Zone 9 - FIPS 5009 - EPSG:26939",
+    "epsg": "26939",
+    "fips": "5009",
+    "zone": "Alaska Zone 9",
+    "search": "alaska zone 9 ak_9 fips 5009 epsg 26939"
+  },
+  {
+    "label": "Alaska Zone 10 - FIPS 5010 - EPSG:26940",
+    "epsg": "26940",
+    "fips": "5010",
+    "zone": "Alaska Zone 10",
+    "search": "alaska zone 10 ak_10 fips 5010 epsg 26940"
+  },
+  {
+    "label": "Alaska Zone 1 - FIPS 5001 - EPSG:26931",
+    "epsg": "26931",
+    "fips": "5001",
+    "zone": "Alaska Zone 1",
+    "search": "alaska zone 1 ak_1 fips 5001 epsg 26931"
+  },
+  {
+    "label": "Alaska Zone 4 - FIPS 5004 - EPSG:26934",
+    "epsg": "26934",
+    "fips": "5004",
+    "zone": "Alaska Zone 4",
+    "search": "alaska zone 4 ak_4 fips 5004 epsg 26934"
+  },
+  {
+    "label": "Alaska Zone 3 - FIPS 5003 - EPSG:26933",
+    "epsg": "26933",
+    "fips": "5003",
+    "zone": "Alaska Zone 3",
+    "search": "alaska zone 3 ak_3 fips 5003 epsg 26933"
+  },
+  {
+    "label": "Alaska Zone 2 - FIPS 5002 - EPSG:26932",
+    "epsg": "26932",
+    "fips": "5002",
+    "zone": "Alaska Zone 2",
+    "search": "alaska zone 2 ak_2 fips 5002 epsg 26932"
+  },
+  {
+    "label": "Alaska Zone 5 - FIPS 5005 - EPSG:26935",
+    "epsg": "26935",
+    "fips": "5005",
+    "zone": "Alaska Zone 5",
+    "search": "alaska zone 5 ak_5 fips 5005 epsg 26935"
+  },
+  {
+    "label": "Alaska Zone 8 - FIPS 5008 - EPSG:26938",
+    "epsg": "26938",
+    "fips": "5008",
+    "zone": "Alaska Zone 8",
+    "search": "alaska zone 8 ak_8 fips 5008 epsg 26938"
+  }
+]

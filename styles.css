@@ -49,6 +49,7 @@ button {
     background: white;
     border: 1px solid #ddd;
     border-radius: 4px;
+    white-space: pre-wrap;
 }
 
 hr {
@@ -60,4 +61,15 @@ hr {
     text-align: center;
     color: #777;
     font-size: 11px;
+}
+
+#searchModeSwitch label {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+#searchModeSwitch input {
+    width: auto;
+    margin-right: 6px;
 }

@@ -1,27 +1,17 @@
 const map = new maplibregl.Map({
     container: 'map',
-
     style: {
         version: 8,
         sources: {
             osm: {
                 type: 'raster',
-                tiles: [
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-                ],
+                tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
                 tileSize: 256,
                 attribution: '© OpenStreetMap'
             }
         },
-        layers: [
-            {
-                id: 'osm',
-                type: 'raster',
-                source: 'osm'
-            }
-        ]
+        layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
     },
-
     center: [-97.7431, 30.2672],
     zoom: 8
 });
@@ -29,106 +19,166 @@ const map = new maplibregl.Map({
 const kmlFileInput = document.getElementById('kmlFile');
 const resultsDiv = document.getElementById('results');
 const projectionSelect = document.getElementById('projectionSelect');
+const findUtilitiesBtn = document.getElementById('findUtilitiesBtn');
 
 let boundaryGeoJson = null;
+let utilitiesGeoJson = null;
 let statePlaneZones = [];
-
-const projectionOptions = [
-    {
-        label: 'WGS84 - EPSG:4326',
-        epsg: '4326',
-        fips: '',
-        zone: 'WGS84',
-        search: 'wgs84 epsg 4326 latitude longitude lat lon'
-    },
-    {
-        label: 'Texas North - FIPS 4201 - EPSG:2275',
-        epsg: '2275',
-        fips: '4201',
-        zone: 'Texas North',
-        search: 'texas north fips 4201 epsg 2275'
-    },
-    {
-        label: 'Texas North Central - FIPS 4202 - EPSG:2276',
-        epsg: '2276',
-        fips: '4202',
-        zone: 'Texas North Central',
-        search: 'texas north central fips 4202 epsg 2276'
-    },
-    {
-        label: 'Texas Central - FIPS 4203 - EPSG:2277',
-        epsg: '2277',
-        fips: '4203',
-        zone: 'Texas Central',
-        search: 'texas central fips 4203 epsg 2277'
-    },
-    {
-        label: 'Texas South Central - FIPS 4204 - EPSG:2278',
-        epsg: '2278',
-        fips: '4204',
-        zone: 'Texas South Central',
-        search: 'texas south central fips 4204 epsg 2278'
-    },
-    {
-        label: 'Texas South - FIPS 4205 - EPSG:2279',
-        epsg: '2279',
-        fips: '4205',
-        zone: 'Texas South',
-        search: 'texas south fips 4205 epsg 2279'
-    }
-];
+let projectionOptions = [];
 
 map.on('load', async () => {
-    map.addSource('boundary', {
-        type: 'geojson',
-        data: {
-            type: 'FeatureCollection',
-            features: []
-        }
-    });
+    map.addSource('boundary', { type: 'geojson', data: emptyFeatureCollection() });
 
     map.addLayer({
         id: 'boundary-fill',
         type: 'fill',
         source: 'boundary',
-        paint: {
-            'fill-color': '#0077ff',
-            'fill-opacity': 0.20
-        }
+        paint: { 'fill-color': '#0077ff', 'fill-opacity': 0.20 }
     });
 
     map.addLayer({
         id: 'boundary-outline',
         type: 'line',
         source: 'boundary',
+        paint: { 'line-color': '#003cff', 'line-width': 3 }
+    });
+
+    map.addSource('utilities', { type: 'geojson', data: emptyFeatureCollection() });
+
+    map.addLayer({
+        id: 'utility-lines',
+        type: 'line',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'LineString'],
+            ['in', ['get', 'power'], ['literal', ['line', 'minor_line', 'cable']]]
+        ],
         paint: {
-            'line-color': '#003cff',
+            'line-color': '#ff0000',
             'line-width': 3
         }
     });
 
-    setupProjectionSearch();
+    map.addLayer({
+        id: 'utility-substations',
+        type: 'fill',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'Polygon'],
+            ['==', ['get', 'power'], 'substation']
+        ],
+        paint: {
+            'fill-color': '#0066ff',
+            'fill-opacity': 0.35
+        }
+    });
+
+    map.addLayer({
+        id: 'utility-substation-outlines',
+        type: 'line',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'Polygon'],
+            ['==', ['get', 'power'], 'substation']
+        ],
+        paint: {
+            'line-color': '#003399',
+            'line-width': 2
+        }
+    });
+
+    map.addLayer({
+        id: 'utility-poles',
+        type: 'circle',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'power'], 'pole']
+        ],
+        paint: {
+            'circle-radius': 4,
+            'circle-color': '#ffff00',
+            'circle-stroke-color': '#000000',
+            'circle-stroke-width': 1
+        }
+    });
+
+    map.addLayer({
+        id: 'utility-towers',
+        type: 'circle',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['==', ['get', 'power'], 'tower']
+        ],
+        paint: {
+            'circle-radius': 5,
+            'circle-color': '#00b894',
+            'circle-stroke-color': '#005bbb',
+            'circle-stroke-width': 2
+        }
+    });
+
+    map.addLayer({
+        id: 'utility-other-points',
+        type: 'circle',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'Point'],
+            ['!', ['in', ['get', 'power'], ['literal', ['pole', 'tower']]]]
+        ],
+        paint: {
+            'circle-radius': 4,
+            'circle-color': '#ff8800',
+            'circle-stroke-color': '#000000',
+            'circle-stroke-width': 1
+        }
+    });
+
+    map.addLayer({
+        id: 'utility-other-polygons',
+        type: 'fill',
+        source: 'utilities',
+        filter: [
+            'all',
+            ['==', ['geometry-type'], 'Polygon'],
+            ['!=', ['get', 'power'], 'substation']
+        ],
+        paint: {
+            'fill-color': '#ff8800',
+            'fill-opacity': 0.25
+        }
+    });
 
     try {
+        await loadProjectionOptions();
+        setupProjectionSearch();
         await loadStatePlaneZones();
+        resultsDiv.textContent = 'Ready. Upload a KML/KMZ boundary.';
     } catch (error) {
-        console.warn('State Plane zones not loaded:', error);
+        console.error(error);
+        resultsDiv.textContent = `Startup Error: ${error.message}`;
     }
 });
 
-kmlFileInput.addEventListener('change', async function () {
+kmlFileInput.addEventListener('change', async () => {
     const file = kmlFileInput.files[0];
-
-    if (!file) {
-        resultsDiv.textContent = 'No file loaded.';
-        return;
-    }
+    if (!file) return;
 
     try {
         resultsDiv.textContent = 'Reading boundary file...';
 
         const kmlText = await readKmlOrKmz(file);
         boundaryGeoJson = parseKmlPolygons(kmlText);
+        utilitiesGeoJson = null;
+
+        map.getSource('utilities').setData(emptyFeatureCollection());
 
         if (boundaryGeoJson.features.length === 0) {
             resultsDiv.textContent = 'No polygon area shapes found in this file.';
@@ -140,17 +190,11 @@ kmlFileInput.addEventListener('change', async function () {
 
         const detectedZone = detectStatePlaneZone(boundaryGeoJson);
         const projection = chooseProjectionFromZone(detectedZone);
-
         setProjectionSearchValue(projection);
 
-        let zoneText = 'No State Plane zone detected. Using WGS84 fallback.';
-
-        if (detectedZone) {
-            zoneText =
-                `Detected Zone: ${detectedZone.zoneName}\n` +
-                `FIPS: ${detectedZone.fipsZone}\n` +
-                `Suggested Projection: ${projection.label}`;
-        }
+        const zoneText = detectedZone
+            ? `Detected Zone: ${detectedZone.zoneName}\nFIPS: ${detectedZone.fipsZone}\nSuggested Projection: ${projection.label}`
+            : `No State Plane zone detected.\nSuggested Projection: ${projection.label}`;
 
         resultsDiv.textContent =
             `Loaded file: ${file.name}\n` +
@@ -163,14 +207,66 @@ kmlFileInput.addEventListener('change', async function () {
     }
 });
 
+findUtilitiesBtn.addEventListener('click', async () => {
+    try {
+        const mode = getSearchMode();
+
+        if (mode === 'boundary' && (!boundaryGeoJson || boundaryGeoJson.features.length === 0)) {
+            resultsDiv.textContent = 'Upload a KML/KMZ boundary first, or switch Search Area to Current Map View.';
+            return;
+        }
+
+        resultsDiv.textContent = `Querying Overpass using ${mode === 'boundary' ? 'boundary' : 'current map view'}...`;
+
+        const overpassJson = mode === 'boundary'
+            ? await queryOverpassByBoundary(boundaryGeoJson)
+            : await queryOverpassByMapView();
+
+        utilitiesGeoJson = overpassToGeoJson(overpassJson);
+        map.getSource('utilities').setData(utilitiesGeoJson);
+
+        const counts = countUtilities(utilitiesGeoJson);
+
+        resultsDiv.textContent =
+            `Utilities found:\n\n` +
+            `Transmission lines: ${counts.lines}\n` +
+            `Towers: ${counts.towers}\n` +
+            `Poles: ${counts.poles}\n` +
+            `Substations: ${counts.substations}\n` +
+            `Transformers: ${counts.transformers}\n` +
+            `Other power features: ${counts.other}\n\n` +
+            `Preview added to map.`;
+
+    } catch (error) {
+        console.error(error);
+        resultsDiv.textContent = `Overpass Error: ${error.message}`;
+    }
+});
+
+async function loadProjectionOptions() {
+    const response = await fetch('data/projections.json');
+
+    if (!response.ok) {
+        throw new Error('Could not load data/projections.json');
+    }
+
+    projectionOptions = await response.json();
+
+    if (!Array.isArray(projectionOptions) || projectionOptions.length === 0) {
+        throw new Error('Projection list is empty or invalid.');
+    }
+}
+
 function setupProjectionSearch() {
     const wrapper = document.createElement('div');
-
     const searchInput = document.createElement('input');
+
     searchInput.id = 'projectionSearch';
     searchInput.setAttribute('list', 'projectionList');
     searchInput.placeholder = 'Search EPSG, FIPS, or State Plane zone';
-    searchInput.value = 'WGS84 - EPSG:4326';
+
+    const defaultProjection = projectionOptions.find(p => p.epsg === '4326') || projectionOptions[0];
+    searchInput.value = defaultProjection.label;
 
     const dataList = document.createElement('datalist');
     dataList.id = 'projectionList';
@@ -183,16 +279,21 @@ function setupProjectionSearch() {
 
     wrapper.appendChild(searchInput);
     wrapper.appendChild(dataList);
-
     projectionSelect.replaceWith(wrapper);
 }
 
 function setProjectionSearchValue(projection) {
     const input = document.getElementById('projectionSearch');
+    if (input && projection) input.value = projection.label;
+}
 
-    if (input && projection) {
-        input.value = projection.label;
-    }
+function getSelectedProjection() {
+    const input = document.getElementById('projectionSearch');
+    if (!input) return projectionOptions[0];
+
+    return projectionOptions.find(option => option.label === input.value) ||
+        projectionOptions.find(option => option.epsg === '4326') ||
+        projectionOptions[0];
 }
 
 async function loadStatePlaneZones() {
@@ -204,16 +305,127 @@ async function loadStatePlaneZones() {
 
     const kmlText = await response.text();
     statePlaneZones = parseStatePlaneZoneKml(kmlText);
-
     console.log(`Loaded ${statePlaneZones.length} State Plane zones.`);
+}
+
+function chooseProjectionFromZone(zone) {
+    if (!zone) {
+        return projectionOptions.find(option => option.epsg === '4326') || projectionOptions[0];
+    }
+
+    return projectionOptions.find(option => option.fips === zone.fipsZone) ||
+        projectionOptions.find(option => option.epsg === '4326') ||
+        projectionOptions[0];
+}
+
+function getSearchMode() {
+    const selected = document.querySelector('input[name="searchMode"]:checked');
+    return selected ? selected.value : 'boundary';
+}
+
+async function queryOverpassByBoundary(boundaryGeoJson) {
+    const polygonQueries = boundaryGeoJson.features.map(feature => {
+        const ring = feature.geometry.coordinates[0];
+        const polyString = ring.map(coord => `${coord[1]} ${coord[0]}`).join(' ');
+
+        return `
+            way["power"="line"](poly:"${polyString}");
+            way["power"="minor_line"](poly:"${polyString}");
+            way["power"="cable"](poly:"${polyString}");
+            node["power"="tower"](poly:"${polyString}");
+            node["power"="pole"](poly:"${polyString}");
+            node["power"="transformer"](poly:"${polyString}");
+            way["power"="substation"](poly:"${polyString}");
+            relation["power"="substation"](poly:"${polyString}");
+        `;
+    }).join('\n');
+
+    return await runOverpassQuery(`
+[out:json][timeout:120];
+(
+${polygonQueries}
+);
+out body;
+>;
+out skel qt;
+`);
+}
+
+async function queryOverpassByMapView() {
+    const b = map.getBounds();
+    const south = b.getSouth();
+    const west = b.getWest();
+    const north = b.getNorth();
+    const east = b.getEast();
+
+    return await runOverpassQuery(`
+[out:json][timeout:120];
+(
+  way["power"="line"](${south},${west},${north},${east});
+  way["power"="minor_line"](${south},${west},${north},${east});
+  way["power"="cable"](${south},${west},${north},${east});
+  node["power"="tower"](${south},${west},${north},${east});
+  node["power"="pole"](${south},${west},${north},${east});
+  node["power"="transformer"](${south},${west},${north},${east});
+  way["power"="substation"](${south},${west},${north},${east});
+  relation["power"="substation"](${south},${west},${north},${east});
+);
+out body;
+>;
+out skel qt;
+`);
+}
+
+async function runOverpassQuery(query, attempt = 1) {
+    console.log(`Overpass attempt ${attempt}:`, query);
+
+    try {
+        const response = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+            },
+            body: new URLSearchParams({
+                data: query
+            })
+        });
+
+        if (!response.ok) {
+            if ((response.status === 504 || response.status === 429 || response.status === 502 || response.status === 503) && attempt < 3) {
+                resultsDiv.textContent = `Overpass was busy or timed out. Retrying attempt ${attempt + 1} of 3...`;
+                await sleep(2000 * attempt);
+                return await runOverpassQuery(query, attempt + 1);
+            }
+
+            throw new Error(`Overpass request failed with status ${response.status}`);
+        }
+
+        const json = await response.json();
+
+        console.log('Overpass raw result:', json);
+        console.log('Raw elements returned:', json.elements ? json.elements.length : 0);
+
+        return json;
+
+    } catch (error) {
+        if (attempt < 3) {
+            resultsDiv.textContent = `Overpass request failed. Retrying attempt ${attempt + 1} of 3...`;
+            await sleep(2000 * attempt);
+            return await runOverpassQuery(query, attempt + 1);
+        }
+
+        throw error;
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function readKmlOrKmz(file) {
     const fileName = file.name.toLowerCase();
 
-    if (fileName.endsWith('.kml')) {
-        return await file.text();
-    }
+    if (fileName.endsWith('.kml')) return await file.text();
 
     if (fileName.endsWith('.kmz')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -223,9 +435,7 @@ async function readKmlOrKmz(file) {
             name.toLowerCase().endsWith('.kml')
         );
 
-        if (!kmlFileName) {
-            throw new Error('KMZ did not contain a KML file.');
-        }
+        if (!kmlFileName) throw new Error('KMZ did not contain a KML file.');
 
         return await zip.files[kmlFileName].async('text');
     }
@@ -234,88 +444,51 @@ async function readKmlOrKmz(file) {
 }
 
 function parseKmlPolygons(kmlText) {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(kmlText, 'text/xml');
-
+    const xmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
     const polygonNodes = xmlDoc.getElementsByTagName('Polygon');
-
     const features = [];
 
     for (let i = 0; i < polygonNodes.length; i++) {
-        const polygonNode = polygonNodes[i];
-        const coordinatesNode = polygonNode.getElementsByTagName('coordinates')[0];
-
-        if (!coordinatesNode) {
-            continue;
-        }
+        const coordinatesNode = polygonNodes[i].getElementsByTagName('coordinates')[0];
+        if (!coordinatesNode) continue;
 
         const coordinates = parseKmlCoordinateText(coordinatesNode.textContent);
-
-        if (coordinates.length < 4) {
-            continue;
-        }
+        if (coordinates.length < 4) continue;
 
         closeRingIfNeeded(coordinates);
 
         features.push({
             type: 'Feature',
-            properties: {
-                source: 'KML Polygon',
-                index: i + 1
-            },
-            geometry: {
-                type: 'Polygon',
-                coordinates: [coordinates]
-            }
+            properties: { source: 'KML Polygon', index: i + 1 },
+            geometry: { type: 'Polygon', coordinates: [coordinates] }
         });
     }
 
-    return {
-        type: 'FeatureCollection',
-        features: features
-    };
+    return { type: 'FeatureCollection', features };
 }
 
 function parseStatePlaneZoneKml(kmlText) {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(kmlText, 'text/xml');
-
+    const xmlDoc = new DOMParser().parseFromString(kmlText, 'text/xml');
     const placemarks = xmlDoc.getElementsByTagName('Placemark');
     const zones = [];
 
     for (let i = 0; i < placemarks.length; i++) {
         const placemark = placemarks[i];
         const polygonNode = placemark.getElementsByTagName('Polygon')[0];
-
-        if (!polygonNode) {
-            continue;
-        }
+        if (!polygonNode) continue;
 
         const coordinatesNode = polygonNode.getElementsByTagName('coordinates')[0];
-
-        if (!coordinatesNode) {
-            continue;
-        }
+        if (!coordinatesNode) continue;
 
         const coordinates = parseKmlCoordinateText(coordinatesNode.textContent);
-
-        if (coordinates.length < 4) {
-            continue;
-        }
+        if (coordinates.length < 4) continue;
 
         closeRingIfNeeded(coordinates);
 
-        const zoneName = getSimpleDataValue(placemark, 'ZONENAME') ||
-            getPlacemarkName(placemark) ||
-            'Unknown Zone';
-
-        const fipsZone = getSimpleDataValue(placemark, 'FIPSZONE') || '';
-        const zone = getSimpleDataValue(placemark, 'ZONE') || '';
-
         zones.push({
-            zoneName,
-            fipsZone,
-            zone,
+            zoneName: getSimpleDataValue(placemark, 'ZONENAME') || getPlacemarkName(placemark) || 'Unknown Zone',
+            fipsZone: getSimpleDataValue(placemark, 'FIPSZONE') || '',
+            zone: getSimpleDataValue(placemark, 'ZONE') || '',
             coordinates
         });
     }
@@ -323,21 +496,85 @@ function parseStatePlaneZoneKml(kmlText) {
     return zones;
 }
 
-function parseKmlCoordinateText(text) {
-    return text
-        .trim()
-        .split(/\s+/)
-        .map(pair => {
-            const parts = pair.split(',');
-            const lon = parseFloat(parts[0]);
-            const lat = parseFloat(parts[1]);
+function overpassToGeoJson(overpassJson) {
+    const nodes = new Map();
+    const features = [];
 
-            return [lon, lat];
-        })
-        .filter(coord =>
-            Number.isFinite(coord[0]) &&
-            Number.isFinite(coord[1])
-        );
+    overpassJson.elements.forEach(element => {
+        if (element.type === 'node' && Number.isFinite(element.lon) && Number.isFinite(element.lat)) {
+            nodes.set(element.id, {
+                coordinates: [element.lon, element.lat],
+                tags: element.tags || {}
+            });
+        }
+    });
+
+    overpassJson.elements.forEach(element => {
+        const tags = element.tags || {};
+
+        if (element.type === 'node' && tags.power) {
+            features.push({
+                type: 'Feature',
+                properties: tags,
+                geometry: { type: 'Point', coordinates: [element.lon, element.lat] }
+            });
+        }
+
+        if (element.type === 'way' && tags.power && Array.isArray(element.nodes)) {
+            const coordinates = element.nodes
+                .map(nodeId => nodes.get(nodeId))
+                .filter(Boolean)
+                .map(node => node.coordinates);
+
+            if (coordinates.length >= 2) {
+                const isClosed =
+                    coordinates.length >= 4 &&
+                    coordinates[0][0] === coordinates[coordinates.length - 1][0] &&
+                    coordinates[0][1] === coordinates[coordinates.length - 1][1];
+
+                features.push({
+                    type: 'Feature',
+                    properties: tags,
+                    geometry: isClosed
+                        ? { type: 'Polygon', coordinates: [coordinates] }
+                        : { type: 'LineString', coordinates }
+                });
+            }
+        }
+    });
+
+    return { type: 'FeatureCollection', features };
+}
+
+function countUtilities(geojson) {
+    const counts = {
+        lines: 0,
+        towers: 0,
+        poles: 0,
+        substations: 0,
+        transformers: 0,
+        other: 0
+    };
+
+    geojson.features.forEach(feature => {
+        const power = feature.properties.power;
+
+        if (power === 'line' || power === 'minor_line' || power === 'cable') counts.lines++;
+        else if (power === 'tower') counts.towers++;
+        else if (power === 'pole') counts.poles++;
+        else if (power === 'substation') counts.substations++;
+        else if (power === 'transformer') counts.transformers++;
+        else counts.other++;
+    });
+
+    return counts;
+}
+
+function parseKmlCoordinateText(text) {
+    return text.trim().split(/\s+/).map(pair => {
+        const parts = pair.split(',');
+        return [parseFloat(parts[0]), parseFloat(parts[1])];
+    }).filter(coord => Number.isFinite(coord[0]) && Number.isFinite(coord[1]));
 }
 
 function closeRingIfNeeded(coordinates) {
@@ -353,10 +590,8 @@ function getSimpleDataValue(placemark, fieldName) {
     const simpleDataNodes = placemark.getElementsByTagName('SimpleData');
 
     for (let i = 0; i < simpleDataNodes.length; i++) {
-        const node = simpleDataNodes[i];
-
-        if (node.getAttribute('name') === fieldName) {
-            return node.textContent.trim();
+        if (simpleDataNodes[i].getAttribute('name') === fieldName) {
+            return simpleDataNodes[i].textContent.trim();
         }
     }
 
@@ -365,44 +600,19 @@ function getSimpleDataValue(placemark, fieldName) {
 
 function getPlacemarkName(placemark) {
     const nameNode = placemark.getElementsByTagName('name')[0];
-
-    if (!nameNode) {
-        return '';
-    }
-
-    return nameNode.textContent.trim();
+    return nameNode ? nameNode.textContent.trim() : '';
 }
 
 function detectStatePlaneZone(boundaryGeoJson) {
-    if (!statePlaneZones || statePlaneZones.length === 0) {
-        return null;
-    }
+    if (!statePlaneZones.length) return null;
 
     const centroid = getGeoJsonCentroid(boundaryGeoJson);
 
     for (const zone of statePlaneZones) {
-        if (pointInPolygon(centroid, zone.coordinates)) {
-            return zone;
-        }
+        if (pointInPolygon(centroid, zone.coordinates)) return zone;
     }
 
     return null;
-}
-
-function chooseProjectionFromZone(zone) {
-    if (!zone) {
-        return projectionOptions[0];
-    }
-
-    const match = projectionOptions.find(option =>
-        option.fips === zone.fipsZone
-    );
-
-    if (match) {
-        return match;
-    }
-
-    return projectionOptions[0];
 }
 
 function getGeoJsonCentroid(geojson) {
@@ -420,16 +630,12 @@ function getGeoJsonCentroid(geojson) {
         });
     });
 
-    return [
-        totalX / totalCount,
-        totalY / totalCount
-    ];
+    return [totalX / totalCount, totalY / totalCount];
 }
 
 function pointInPolygon(point, polygon) {
     const x = point[0];
     const y = point[1];
-
     let inside = false;
 
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -442,9 +648,7 @@ function pointInPolygon(point, polygon) {
             ((yi > y) !== (yj > y)) &&
             (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
 
-        if (intersect) {
-            inside = !inside;
-        }
+        if (intersect) inside = !inside;
     }
 
     return inside;
@@ -454,17 +658,14 @@ function zoomToGeoJson(geojson) {
     const bounds = new maplibregl.LngLatBounds();
 
     geojson.features.forEach(feature => {
-        const rings = feature.geometry.coordinates;
-
-        rings.forEach(ring => {
-            ring.forEach(coord => {
-                bounds.extend(coord);
-            });
+        feature.geometry.coordinates.forEach(ring => {
+            ring.forEach(coord => bounds.extend(coord));
         });
     });
 
-    map.fitBounds(bounds, {
-        padding: 60,
-        duration: 1000
-    });
+    map.fitBounds(bounds, { padding: 60, duration: 1000 });
+}
+
+function emptyFeatureCollection() {
+    return { type: 'FeatureCollection', features: [] };
 }
