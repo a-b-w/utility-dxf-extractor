@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Utility DXF Extractor</title>
+    <title>Al's Utility Extractor</title>
 
     <link
         href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css"
@@ -15,12 +15,58 @@
 </head>
 <body>
 
-    <h1>Utility DXF Extractor</h1>
+<div id="container">
+
+    <div id="sidebar">
+
+        <h1>Al's Utility Extractor</h1>
+
+        <hr>
+
+        <h3>Boundary File</h3>
+
+        <input type="file" id="kmlFile">
+
+        <hr>
+
+        <h3>Projection</h3>
+
+        <select id="projectionSelect">
+            <option>WGS84 (EPSG:4326)</option>
+        </select>
+
+        <hr>
+
+        <button id="findUtilitiesBtn">
+            Find Utilities
+        </button>
+
+        <hr>
+
+        <h3>Results</h3>
+
+        <div id="results">
+            No file loaded.
+        </div>
+
+        <hr>
+
+        <button id="downloadDxfBtn">
+            Download DXF
+        </button>
+
+        <div id="footer">
+            ⚡ Created by Alexander West
+        </div>
+
+    </div>
 
     <div id="map"></div>
 
-    <script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
-    <script src="app.js"></script>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
