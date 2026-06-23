@@ -461,15 +461,27 @@ async function loadStatePlaneZones() {
 }
 
 async function loadCountyBoundaries() {
-    const response = await fetch('data/us_county_boundaries.kml');
+    const response = await fetch('data/us_county_boundaries.zip');
 
     if (!response.ok) {
-        throw new Error('Could not load data/us_county_boundaries.kml');
+        throw new Error('Could not load data/us_county_boundaries.zip');
     }
 
-    const kmlText = await response.text();
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    const kmlFileName = Object.keys(zip.files).find(name =>
+        name.toLowerCase().endsWith('.kml')
+    );
+
+    if (!kmlFileName) {
+        throw new Error('County ZIP did not contain a KML file.');
+    }
+
+    const kmlText = await zip.files[kmlFileName].async('text');
     countyBoundaries = parseCountyKml(kmlText);
-    console.log(`Loaded ${countyBoundaries.length} county polygons.`);
+
+    console.log(`Loaded ${countyBoundaries.length} counties from ZIP.`);
 }
 
 function parseCountyKml(kmlText) {
