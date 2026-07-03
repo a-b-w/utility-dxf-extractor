@@ -67,12 +67,9 @@ kmlFileInput.addEventListener('change', async () => {
 
         const detectedZone = detectStatePlaneZone(boundaryGeoJson);
         const detectedCounty = detectCounty(boundaryGeoJson);
-        const localSources = detectedCounty
-    ? sourceManager.getSourcesForLocation(
-        detectedCounty.state_name,
-        detectedCounty.namelsad
-    )
-    : [];
+        const detectedCounties = detectCounties(boundaryGeoJson);
+        const localSources = getSourcesForCounties(detectedCounties);
+
         const projection = chooseProjectionFromZone(detectedZone);
         setProjectionSearchValue(projection);
 
@@ -80,20 +77,22 @@ kmlFileInput.addEventListener('change', async () => {
             ? `Detected Zone: ${detectedZone.zoneName}\nFIPS: ${detectedZone.fipsZone}\nSuggested Projection: ${projection.label}`
             : `No State Plane zone detected.\nSuggested Projection: ${projection.label}`;
 
-        const countyText = detectedCounty
-    ? `County: ${detectedCounty.namelsad}\nState: ${detectedCounty.state_name}\nCounty GEOID: ${detectedCounty.geoid}`
-    : 'County: Unknown';
+        const countyText = detectedCounties.length
+            ? `Counties detected: ${detectedCounties.map(county => `${county.namelsad}, ${county.stusab}`).join('; ')}`
+            : detectedCounty
+                ? `County: ${detectedCounty.namelsad}\nState: ${detectedCounty.state_name}\nCounty GEOID: ${detectedCounty.geoid}`
+                : 'County: Unknown';
 
-const sourceText = `Configured local sources: ${localSources.length}`;
+        const sourceText = `Configured local sources: ${localSources.length}`;
 
-resultsDiv.textContent =
-    `Loaded file: ${file.name}\n` +
-    `Area polygons found: ${boundaryGeoJson.features.length}\n\n` +
-    countyText +
-    `\n\n` +
-    sourceText +
-    `\n\n` +
-    zoneText;
+        resultsDiv.textContent =
+            `Loaded file: ${file.name}\n` +
+            `Area polygons found: ${boundaryGeoJson.features.length}\n\n` +
+            countyText +
+            `\n\n` +
+            sourceText +
+            `\n\n` +
+            zoneText;
 
     } catch (error) {
         console.error(error);
@@ -279,50 +278,12 @@ function addMapLayers() {
     - ArcGIS FeatureServer sources
     - user-supplied data
 */
-const utilitySources = [
-    {
-        id: 'osm',
-        name: 'OpenStreetMap',
-        enabled: true,
-        query: runUtilitySources
-    }
-
-    // Future example:
-    // {
-    //     id: 'hifld-transmission',
-    //     name: 'HIFLD Transmission',
-    //     enabled: true,
-    //     query: queryHifldTransmission
-    // }
-];
-
 async function runUtilitySources(mode) {
-    const sourceResults = [];
+    const detectedCounties = boundaryGeoJson
+        ? detectCounties(boundaryGeoJson)
+        : [];
 
-    for (const source of utilitySources) {
-        if (!source.enabled) continue;
-
-        resultsDiv.textContent = `Querying ${source.name} using ${mode === 'boundary' ? 'boundary' : 'current map view'}...`;
-
-        const result = await source.query(mode);
-        sourceResults.push(result);
-    }
-
-    const merged = mergeFeatureCollections(sourceResults);
-    const deduped = dedupeUtilityFeatures(merged);
-
-    return deduped;
-}
-
-async function runUtilitySources(mode) {
-    const detectedCounty = boundaryGeoJson
-        ? detectCounty(boundaryGeoJson)
-        : null;
-
-    const applicableSources = sourceManager.getSourcesForLocation(
-        detectedCounty ? detectedCounty.state_name : null,
-        detectedCounty ? detectedCounty.namelsad : null
-    );
+    const applicableSources = getSourcesForCounties(detectedCounties);
 
     const sourceResults = [];
 
@@ -347,6 +308,33 @@ async function runUtilitySources(mode) {
     const deduped = dedupeUtilityFeatures(merged);
 
     return deduped;
+}
+
+function getSourcesForCounties(counties) {
+    const sourceMap = new Map();
+
+    if (!counties || counties.length === 0) {
+        const globalSources = sourceManager.getSourcesForLocation(null, null);
+
+        globalSources.forEach(source => {
+            sourceMap.set(source.id, source);
+        });
+
+        return Array.from(sourceMap.values());
+    }
+
+    counties.forEach(county => {
+        const countySources = sourceManager.getSourcesForLocation(
+            county.state_name,
+            county.namelsad
+        );
+
+        countySources.forEach(source => {
+            sourceMap.set(source.id, source);
+        });
+    });
+
+    return Array.from(sourceMap.values());
 }
 
 function mergeFeatureCollections(collections) {
@@ -863,15 +851,101 @@ function detectStatePlaneZone(boundaryGeoJson) {
 }
 
 function detectCounty(boundaryGeoJson) {
-    if (!countyBoundaries.length) return null;
+    const counties = detectCounties(boundaryGeoJson);
 
-    const centroid = getGeoJsonCentroid(boundaryGeoJson);
-
-    for (const county of countyBoundaries) {
-        if (pointInPolygon(centroid, county.coordinates)) return county;
+    if (counties.length > 0) {
+        return counties[0];
     }
 
     return null;
+}
+
+function detectCounties(boundaryGeoJson) {
+    if (!countyBoundaries.length || !boundaryGeoJson) {
+        return [];
+    }
+
+    const matched = [];
+
+    for (const county of countyBoundaries) {
+        if (boundaryTouchesCounty(boundaryGeoJson, county)) {
+            matched.push(county);
+        }
+    }
+
+    return matched;
+}
+
+function boundaryTouchesCounty(boundaryGeoJson, county) {
+    for (const feature of boundaryGeoJson.features) {
+        const rings = getFeatureRings(feature);
+
+        for (const ring of rings) {
+            if (ring.some(coord => pointInPolygon(coord, county.coordinates))) {
+                return true;
+            }
+
+            if (county.coordinates.some(coord => pointInPolygon(coord, ring))) {
+                return true;
+            }
+
+            if (ringsIntersect(ring, county.coordinates)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function getFeatureRings(feature) {
+    if (!feature || !feature.geometry) {
+        return [];
+    }
+
+    if (feature.geometry.type === 'Polygon') {
+        return feature.geometry.coordinates;
+    }
+
+    if (feature.geometry.type === 'MultiPolygon') {
+        return feature.geometry.coordinates.flat();
+    }
+
+    return [];
+}
+
+function ringsIntersect(ringA, ringB) {
+    for (let i = 0; i < ringA.length - 1; i++) {
+        for (let j = 0; j < ringB.length - 1; j++) {
+            if (lineSegmentsIntersect(ringA[i], ringA[i + 1], ringB[j], ringB[j + 1])) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function lineSegmentsIntersect(a, b, c, d) {
+    const denominator =
+        ((d[1] - c[1]) * (b[0] - a[0])) -
+        ((d[0] - c[0]) * (b[1] - a[1]));
+
+    if (denominator === 0) {
+        return false;
+    }
+
+    const ua =
+        (((d[0] - c[0]) * (a[1] - c[1])) -
+        ((d[1] - c[1]) * (a[0] - c[0]))) /
+        denominator;
+
+    const ub =
+        (((b[0] - a[0]) * (a[1] - c[1])) -
+        ((b[1] - a[1]) * (a[0] - c[0]))) /
+        denominator;
+
+    return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
 }
 
 function getGeoJsonCentroid(geojson) {
