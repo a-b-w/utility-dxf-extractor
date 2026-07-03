@@ -6,11 +6,13 @@ class ProviderManager {
 
     register(provider) {
 
-        this.providers[provider.id] = provider;
+    this.providers[provider.id] = provider;
 
-        console.log(`Registered provider: ${provider.id}`);
+    console.log(
+        `✅ Registered provider: ${provider.id} (${provider.name})`
+    );
 
-    }
+}
 
     get(id) {
 
