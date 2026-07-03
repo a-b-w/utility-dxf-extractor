@@ -284,7 +284,7 @@ const utilitySources = [
         id: 'osm',
         name: 'OpenStreetMap',
         enabled: true,
-        query: queryOsmUtilities
+        query: runUtilitySources
     }
 
     // Future example:
