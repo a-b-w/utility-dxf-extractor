@@ -67,6 +67,12 @@ kmlFileInput.addEventListener('change', async () => {
 
         const detectedZone = detectStatePlaneZone(boundaryGeoJson);
         const detectedCounty = detectCounty(boundaryGeoJson);
+        const localSources = detectedCounty
+    ? sourceManager.getSourcesForLocation(
+        detectedCounty.state_name,
+        detectedCounty.namelsad
+    )
+    : [];
         const projection = chooseProjectionFromZone(detectedZone);
         setProjectionSearchValue(projection);
 
@@ -75,15 +81,19 @@ kmlFileInput.addEventListener('change', async () => {
             : `No State Plane zone detected.\nSuggested Projection: ${projection.label}`;
 
         const countyText = detectedCounty
-            ? `County: ${detectedCounty.namelsad}\nState: ${detectedCounty.state_name}\nCounty GEOID: ${detectedCounty.geoid}`
-            : 'County: Unknown';
+    ? `County: ${detectedCounty.namelsad}\nState: ${detectedCounty.state_name}\nCounty GEOID: ${detectedCounty.geoid}`
+    : 'County: Unknown';
 
-        resultsDiv.textContent =
-            `Loaded file: ${file.name}\n` +
-            `Area polygons found: ${boundaryGeoJson.features.length}\n\n` +
-            countyText +
-            `\n\n` +
-            zoneText;
+const sourceText = `Configured local sources: ${localSources.length}`;
+
+resultsDiv.textContent =
+    `Loaded file: ${file.name}\n` +
+    `Area polygons found: ${boundaryGeoJson.features.length}\n\n` +
+    countyText +
+    `\n\n` +
+    sourceText +
+    `\n\n` +
+    zoneText;
 
     } catch (error) {
         console.error(error);

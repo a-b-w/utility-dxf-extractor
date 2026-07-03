@@ -1,39 +1,41 @@
 class SourceManager {
-
     constructor() {
-        this.sources = null;
+        this.sources = {};
     }
 
     async load() {
-
         const response = await fetch("data/arcgis_sources.json");
+
+        if (!response.ok) {
+            throw new Error("Could not load data/arcgis_sources.json");
+        }
 
         this.sources = await response.json();
 
         console.log("Loaded ArcGIS Source Database");
     }
 
-    getStateSources(state) {
+    getSourcesForLocation(stateName, countyName) {
+        if (!stateName || !countyName) return [];
 
-        if (!this.sources[state]) return [];
+        const stateBlock = this.sources[stateName];
 
-        return this.sources[state].statewide;
+        if (!stateBlock) return [];
+
+        const statewide = stateBlock.statewide || [];
+
+        const cleanCountyName = countyName
+            .replace(" County", "")
+            .trim();
+
+        const countySources =
+            stateBlock.counties?.[cleanCountyName] || [];
+
+        return [
+            ...statewide,
+            ...countySources
+        ];
     }
-
-    getCountySources(state, county) {
-
-        if (!this.sources[state]) return [];
-
-        return this.sources[state].counties[county] || [];
-    }
-
-    getCitySources(state, city) {
-
-        if (!this.sources[state]) return [];
-
-        return this.sources[state].cities[city] || [];
-    }
-
 }
 
 const sourceManager = new SourceManager();
