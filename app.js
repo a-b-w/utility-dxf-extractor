@@ -35,6 +35,8 @@ map.on('load', async () => {
         setupProjectionSearch();
         await loadStatePlaneZones();
         await loadCountyBoundaries();
+        await sourceManager.load();
+
         resultsDiv.textContent = 'Ready. Upload a KML/KMZ boundary.';
     } catch (error) {
         console.error(error);

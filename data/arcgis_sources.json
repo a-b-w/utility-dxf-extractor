@@ -1,0 +1,37 @@
+{
+  "Texas": {
+    "statewide": [],
+    "counties": {
+      "Rockwall": [],
+      "Travis": [],
+      "Williamson": [],
+      "Hays": [],
+      "Dallas": [],
+      "Tarrant": [],
+      "Bexar": [],
+      "Collin": [],
+      "Denton": []
+    },
+    "cities": {
+      "Austin": [],
+      "Dallas": [],
+      "Fort Worth": [],
+      "San Antonio": [],
+      "Round Rock": [],
+      "Georgetown": [],
+      "Leander": []
+    }
+  },
+
+  "Florida": {
+    "statewide": [],
+    "counties": {},
+    "cities": {}
+  },
+
+  "Colorado": {
+    "statewide": [],
+    "counties": {},
+    "cities": {}
+  }
+}
