@@ -314,18 +314,39 @@ async function runUtilitySources(mode) {
     return deduped;
 }
 
-async function queryOsmUtilities(mode) {
-    const overpassJson = mode === 'boundary'
-        ? await queryOverpassByBoundary(boundaryGeoJson)
-        : await queryOverpassByMapView();
+async function runUtilitySources(mode) {
+    const detectedCounty = boundaryGeoJson
+        ? detectCounty(boundaryGeoJson)
+        : null;
 
-    const geojson = overpassToGeoJson(overpassJson);
+    const applicableSources = sourceManager.getSourcesForLocation(
+        detectedCounty ? detectedCounty.state_name : null,
+        detectedCounty ? detectedCounty.namelsad : null
+    );
 
-    geojson.features.forEach(feature => {
-        feature.properties.source = 'OSM';
-    });
+    const sourceResults = [];
 
-    return geojson;
+    for (const source of applicableSources) {
+        resultsDiv.textContent =
+            `Querying ${source.name} using ${mode === "boundary" ? "boundary" : "current map view"}...`;
+
+        const result = await providerManager.query(
+            source,
+            boundaryGeoJson,
+            {
+                mode,
+                map,
+                resultsDiv
+            }
+        );
+
+        sourceResults.push(result);
+    }
+
+    const merged = mergeFeatureCollections(sourceResults);
+    const deduped = dedupeUtilityFeatures(merged);
+
+    return deduped;
 }
 
 function mergeFeatureCollections(collections) {
