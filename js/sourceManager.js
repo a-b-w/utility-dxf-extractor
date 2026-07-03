@@ -1,40 +1,72 @@
 class SourceManager {
     constructor() {
-        this.sources = {};
+        this.sources = [];
     }
 
     async load() {
-        const response = await fetch("data/arcgis_sources.json");
+        const response = await fetch("data/sources.json");
 
         if (!response.ok) {
-            throw new Error("Could not load data/arcgis_sources.json");
+            throw new Error("Could not load data/sources.json");
         }
 
-        this.sources = await response.json();
+        const data = await response.json();
+        this.sources = data.sources || [];
 
-        console.log("Loaded ArcGIS Source Database");
+        console.log(`Loaded ${this.sources.length} utility source definitions.`);
     }
 
-    getSourcesForLocation(stateName, countyName) {
-        if (!stateName || !countyName) return [];
+    getSourcesForLocation(stateName, countyName, cityName = null) {
+        return this.sources.filter(source => {
+            if (!source.enabled) return false;
+            if (!source.coverage) return false;
 
-        const stateBlock = this.sources[stateName];
+            return this.sourceAppliesToLocation(
+                source.coverage,
+                stateName,
+                countyName,
+                cityName
+            );
+        });
+    }
 
-        if (!stateBlock) return [];
+    sourceAppliesToLocation(coverage, stateName, countyName, cityName = null) {
+        if (coverage.scope === "global") {
+            return true;
+        }
 
-        const statewide = stateBlock.statewide || [];
+        if (coverage.scope === "usa") {
+            return true;
+        }
+
+        if (coverage.scope === "state") {
+            return coverage.state === stateName;
+        }
 
         const cleanCountyName = countyName
-            .replace(" County", "")
-            .trim();
+            ? countyName.replace(" County", "").trim()
+            : "";
 
-        const countySources =
-            stateBlock.counties?.[cleanCountyName] || [];
+        if (coverage.scope === "county") {
+            if (coverage.state && coverage.state !== stateName) {
+                return false;
+            }
 
-        return [
-            ...statewide,
-            ...countySources
-        ];
+            return Array.isArray(coverage.counties) &&
+                coverage.counties.includes(cleanCountyName);
+        }
+
+        if (coverage.scope === "city") {
+            if (coverage.state && coverage.state !== stateName) {
+                return false;
+            }
+
+            return cityName &&
+                Array.isArray(coverage.cities) &&
+                coverage.cities.includes(cityName);
+        }
+
+        return false;
     }
 }
 

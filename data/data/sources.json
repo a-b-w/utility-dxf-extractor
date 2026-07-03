@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "id": "osm-overpass",
+      "name": "OpenStreetMap Overpass",
+      "type": "osm",
+      "enabled": true,
+      "coverage": {
+        "scope": "global"
+      }
+    },
+    {
+      "id": "frisco-oncor-overhead",
+      "name": "Frisco Oncor Electric - Overhead",
+      "type": "arcgis",
+      "enabled": true,
+      "geometryType": "line",
+      "power": "line",
+      "url": "https://maps.friscotexas.gov/gis/rest/services/Public/TRAKiT_Map/MapServer/25",
+      "coverage": {
+        "scope": "county",
+        "state": "Texas",
+        "counties": ["Collin", "Denton"],
+        "cities": ["Frisco"]
+      }
+    }
+  ]
+}
