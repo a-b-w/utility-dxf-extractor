@@ -20,6 +20,7 @@ const kmlFileInput = document.getElementById('kmlFile');
 const resultsDiv = document.getElementById('results');
 const projectionSelect = document.getElementById('projectionSelect');
 const findUtilitiesBtn = document.getElementById('findUtilitiesBtn');
+const downloadDxfBtn = document.getElementById('downloadDxfBtn');
 
 let boundaryGeoJson = null;
 let utilitiesGeoJson = null;
@@ -112,6 +113,9 @@ findUtilitiesBtn.addEventListener('click', async () => {
         resultsDiv.textContent = `Querying utility sources using ${mode === 'boundary' ? 'boundary' : 'current map view'}...`;
 
         utilitiesGeoJson = await runUtilitySources(mode);
+
+        window.currentMergedUtilities = utilitiesGeoJson;
+
         map.getSource('utilities').setData(utilitiesGeoJson);
 
         const counts = countUtilities(utilitiesGeoJson);
@@ -130,6 +134,10 @@ findUtilitiesBtn.addEventListener('click', async () => {
         console.error(error);
         resultsDiv.textContent = `Utility Search Error: ${error.message}`;
     }
+});
+
+downloadDxfBtn.addEventListener('click', () => {
+    downloadDxf(window.currentMergedUtilities || utilitiesGeoJson);
 });
 
 function addMapLayers() {
@@ -1001,4 +1009,212 @@ function zoomToGeoJson(geojson) {
 
 function emptyFeatureCollection() {
     return { type: 'FeatureCollection', features: [] };
+}
+
+function geoJsonToDxf(geojson) {
+    const lines = [];
+
+    lines.push("0");
+    lines.push("SECTION");
+    lines.push("2");
+    lines.push("HEADER");
+    lines.push("0");
+    lines.push("ENDSEC");
+
+    lines.push("0");
+    lines.push("SECTION");
+    lines.push("2");
+    lines.push("TABLES");
+    lines.push("0");
+    lines.push("TABLE");
+    lines.push("2");
+    lines.push("LAYER");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_LINES");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_MINOR_LINES");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_CABLES");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_TOWERS");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_POLES");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_SUBSTATIONS");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_TRANSFORMERS");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("LAYER");
+    lines.push("2");
+    lines.push("POWER_OTHER");
+    lines.push("70");
+    lines.push("0");
+    lines.push("0");
+    lines.push("ENDTAB");
+    lines.push("0");
+    lines.push("ENDSEC");
+
+    lines.push("0");
+    lines.push("SECTION");
+    lines.push("2");
+    lines.push("ENTITIES");
+
+    geojson.features.forEach(feature => {
+        if (!feature || !feature.geometry) return;
+
+        const layer = getDxfLayer(feature);
+        const geometry = feature.geometry;
+
+        if (geometry.type === "LineString") {
+            addDxfPolyline(lines, geometry.coordinates, layer, false);
+            return;
+        }
+
+        if (geometry.type === "MultiLineString") {
+            geometry.coordinates.forEach(path => {
+                addDxfPolyline(lines, path, layer, false);
+            });
+            return;
+        }
+
+        if (geometry.type === "Polygon") {
+            geometry.coordinates.forEach(ring => {
+                addDxfPolyline(lines, ring, layer, true);
+            });
+            return;
+        }
+
+        if (geometry.type === "MultiPolygon") {
+            geometry.coordinates.forEach(polygon => {
+                polygon.forEach(ring => {
+                    addDxfPolyline(lines, ring, layer, true);
+                });
+            });
+            return;
+        }
+
+        if (geometry.type === "Point") {
+            addDxfPoint(lines, geometry.coordinates, layer);
+        }
+    });
+
+    lines.push("0");
+    lines.push("ENDSEC");
+    lines.push("0");
+    lines.push("EOF");
+
+    return lines.join("\n");
+}
+
+function addDxfPolyline(lines, coordinates, layer, closed = false) {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return;
+
+    lines.push("0");
+    lines.push("POLYLINE");
+    lines.push("8");
+    lines.push(layer);
+    lines.push("66");
+    lines.push("1");
+    lines.push("70");
+    lines.push(closed ? "1" : "0");
+
+    coordinates.forEach(coord => {
+        if (!Array.isArray(coord) || coord.length < 2) return;
+
+        lines.push("0");
+        lines.push("VERTEX");
+        lines.push("8");
+        lines.push(layer);
+        lines.push("10");
+        lines.push(String(coord[0]));
+        lines.push("20");
+        lines.push(String(coord[1]));
+        lines.push("30");
+        lines.push("0");
+    });
+
+    lines.push("0");
+    lines.push("SEQEND");
+}
+
+function addDxfPoint(lines, coord, layer) {
+    if (!Array.isArray(coord) || coord.length < 2) return;
+
+    const radius = 0.00005;
+
+    lines.push("0");
+    lines.push("CIRCLE");
+    lines.push("8");
+    lines.push(layer);
+    lines.push("10");
+    lines.push(String(coord[0]));
+    lines.push("20");
+    lines.push(String(coord[1]));
+    lines.push("30");
+    lines.push("0");
+    lines.push("40");
+    lines.push(String(radius));
+}
+
+function getDxfLayer(feature) {
+    const power = feature.properties?.power || "other";
+
+    if (power === "line" || power === "transmission") return "POWER_LINES";
+    if (power === "minor_line") return "POWER_MINOR_LINES";
+    if (power === "cable") return "POWER_CABLES";
+    if (power === "tower") return "POWER_TOWERS";
+    if (power === "pole") return "POWER_POLES";
+    if (power === "substation") return "POWER_SUBSTATIONS";
+    if (power === "transformer") return "POWER_TRANSFORMERS";
+
+    return "POWER_OTHER";
+}
+
+
+function downloadDxf(geojson) {
+    if (!geojson || !geojson.features || geojson.features.length === 0) {
+        alert("No utility features available to export.");
+        return;
+    }
+
+    const dxfText = geoJsonToDxf(geojson);
+    const blob = new Blob([dxfText], { type: "application/dxf" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "alex_utility_extract.dxf";
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
