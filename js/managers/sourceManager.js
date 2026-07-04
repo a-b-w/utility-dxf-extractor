@@ -35,7 +35,7 @@ class SourceManager {
             return true;
         }
 
-        if (coverage.scope === "usa") {
+        if (coverage.scope === "usa" || coverage.scope === "national") {
             return true;
         }
 

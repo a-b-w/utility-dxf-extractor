@@ -9,6 +9,33 @@
         "scope": "global"
       }
     },
+
+    {
+      "id": "hifld-transmission",
+      "name": "HIFLD Electric Transmission",
+      "type": "hifld",
+      "enabled": true,
+      "geometryType": "line",
+      "power": "transmission",
+      "dataset": "transmission",
+      "coverage": {
+        "scope": "usa"
+      }
+    },
+
+    {
+      "id": "hifld-substations",
+      "name": "HIFLD Electric Substations",
+      "type": "hifld",
+      "enabled": true,
+      "geometryType": "point",
+      "power": "substation",
+      "dataset": "substations",
+      "coverage": {
+        "scope": "usa"
+      }
+    },
+
     {
       "id": "frisco-oncor-overhead",
       "name": "Frisco Oncor Electric - Overhead",
@@ -20,8 +47,13 @@
       "coverage": {
         "scope": "county",
         "state": "Texas",
-        "counties": ["Collin", "Denton"],
-        "cities": ["Frisco"]
+        "counties": [
+          "Collin",
+          "Denton"
+        ],
+        "cities": [
+          "Frisco"
+        ]
       }
     }
   ]
