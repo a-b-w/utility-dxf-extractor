@@ -1,235 +1,201 @@
 # Alex's Utility Extractor Roadmap
 
----
+## Release Status
 
-# Vision
+# Version 1.0 — COMPLETE
+
+Version 1.0 establishes a stable end-to-end utility extraction workflow using KML/KMZ boundaries and downloadable GIS packages.
+
+## Vision
 
 Alex's Utility Extractor is a GIS utility data aggregation platform.
 
-The goal is simple:
+The application accepts a project boundary, detects location and projection information, queries the best available public utility sources, merges the results, previews them on a map, and packages the results into portable GIS deliverables.
 
-Upload a project boundary, automatically detect the project location and projection, discover the best available public utility datasets, merge the results into one clean dataset, remove duplicates, preview everything on the map, and export production-ready CAD/GIS deliverables.
+The long-term goal remains nationwide utility extraction with source expansion driven primarily through configuration rather than repeated application rewrites.
 
-The long-term goal is nationwide utility extraction without requiring code changes for new providers.
-
----
-
-# Architecture
+## Version 1.0 Architecture
 
 ```text
-Boundary
-    │
-    ▼
-Location Detection
-    │
-    ▼
-Projection Detection
-    │
-    ▼
-Source Registry (sources.json)
-    │
-    ▼
+KML / KMZ Boundary
+        │
+        ▼
+Boundary Parsing
+        │
+        ▼
+Multi-Polygon / Multi-County Detection
+        │
+        ▼
+State / County / GEOID Detection
+        │
+        ▼
+State Plane / FIPS / EPSG Recommendation
+        │
+        ▼
+Source Registry
+        │
+        ▼
 Provider Manager
-    │
-    ├───────────────┐
-    │               │
-    ▼               ▼
-OSM Provider   ArcGIS Provider
-    │               │
-    └──────┬────────┘
-           ▼
-Normalize Features
-           ▼
-Merge
-           ▼
-Deduplicate
-           ▼
-Preview
-           ▼
-DXF Export
+        │
+        ├───────────────┬────────────────┐
+        ▼               ▼                ▼
+      OSM             HIFLD          ArcGIS Framework
+        │               │                │
+        └───────────────┴────────────────┘
+                        │
+                        ▼
+                 Merge / Deduplicate
+                        │
+                        ▼
+                   Map Preview
+                        │
+                        ▼
+                 Download Package
 ```
 
----
-
-# Current Status
-
-## ✅ Completed
+## Completed in Version 1.0
 
 ### Boundary Processing
 
 - KML upload
 - KMZ upload
 - Polygon extraction
+- Multi-polygon support
 - Boundary preview
+- Automatic map zoom
 
 ### Location Detection
 
 - County detection
+- Multi-county detection
 - State detection
 - County GEOID detection
+- Nationwide compressed county dataset
 
 ### Projection Detection
 
-- State Plane Zone detection
-- EPSG/FIPS recommendation
-- Projection search
+- State Plane zone detection
+- FIPS recommendation
+- EPSG recommendation
+- Projection search and selection
 
-### OSM
+### Utility Search
 
-- Overpass query engine
-- Boundary search
-- Current map view search
-- Retry logic
-- Utility preview rendering
-
-### County Dataset
-
-- ZIP compressed county dataset
-- Automatic loading
-- County lookup
+- Uploaded-boundary search
+- Current-map-view search
+- OpenStreetMap / Overpass query engine
+- Overpass retry logic
+- HIFLD transmission-line query
+- HIFLD substation query
 
 ### Source Architecture
 
-- Source registry
-- sources.json configuration
+- `sources.json` registry
 - SourceManager
 - ProviderManager
+- OSM provider
+- HIFLD provider
+- ArcGIS provider framework
 - Automatic provider registration
-- Automatic source selection
-
-### Providers
-
-- OSM Provider
-- ArcGIS Provider (framework)
+- County/state coverage filtering
+- Multi-source query pipeline
 
 ### Processing
 
-- Merge pipeline
-- Deduplication framework
-- Unified provider pipeline
+- Provider result normalization
+- FeatureCollection merge
+- Basic duplicate removal
+- Utility feature counts
+- Provider/source metadata tracking
 
 ### User Interface
 
-- Utility preview
+- Interactive MapLibre map
+- Boundary symbology
+- Utility symbology
 - Projection display
-- County display
-- Search modes
+- County/state/GEOID display
+- Result summary
+- Boundary and map-view search modes
 
----
+### Version 1.0 Deliverables
 
-# 🚧 Current Milestone
+Every successful download creates a ZIP package containing:
 
-## ArcGIS FeatureServer Query
+- Utility GeoJSON
+- Utility KML
+- Utility KMZ
+- Metadata TXT
+- Boundary GeoJSON
+- Boundary KML
 
-Current objective:
+The metadata file records project, projection, search mode, feature counts, and contributing providers.
 
-Use ArcGIS REST FeatureServers to retrieve utility data and merge it with OSM results.
+## Deferred from Version 1.0
 
-Once complete the application will support multiple providers simultaneously.
+The following were intentionally removed from the release path to preserve stability:
 
----
+- DXF boundary import
+- DWG boundary import
+- Direct DXF export
+- Direct DWG export
 
-# Upcoming Milestones
+These remain future candidates but will not be added by patching the stable Version 1.0 application.
 
-## Milestone 8
+## Version 1.1 Candidates
 
-ArcGIS FeatureServer support
-
-- Query REST endpoints
-- Convert ESRI JSON to GeoJSON
-- Merge with OSM
-- Display merged utilities
-
----
-
-## Milestone 9
-
-DXF Export Engine
-
-- Export LineStrings
-- Export Points
-- Export Polygons
-- Download DXF
-
----
-
-## Milestone 10
-
-CAD Improvements
-
-- Layer mapping
-- Colors
-- Line weights
-- Attribute export
-- Blocks/symbols
-
----
-
-## Milestone 11
-
-Additional Providers
-
-- HIFLD
-- WFS
-- GeoJSON
-- State datasets
-- Municipal datasets
-
----
-
-## Milestone 12
-
-Nationwide Expansion
-
+- Shapefile ZIP export
+- GeoJSON boundary import
 - Provider diagnostics
-- Automatic provider discovery
-- Health checking
-- Batch processing
-- Multiple boundaries
-- Provider statistics
+- Improved geometry-based deduplication
+- Parallel provider queries
+- Better progress and timeout reporting
+- Additional national and state utility sources
 
----
+## Version 1.2 Candidates
 
-# Design Philosophy
+- Curated ArcGIS source catalog
+- State, county, municipal, and utility-company sources
+- Provider priority and confidence scoring
+- Source health checking
+- Local caching
 
-The application should never require editing JavaScript when adding a new utility provider.
+## Future CAD Track
 
-Adding a provider should be:
+CAD functionality should be developed as a separate, tested conversion track rather than handwritten browser DXF output.
 
-1. Find the endpoint.
-2. Add one entry to sources.json.
-3. Reload the application.
+Possible future architecture:
 
-Done.
+```text
+Canonical GeoJSON
+        │
+        ▼
+Validated CAD Conversion Service
+        │
+        ├── DXF
+        └── DWG
+```
 
----
+Any future CAD importer must include explicit source CRS handling and performance-safe county detection before being merged into the stable application.
 
-# Development Log
+## Version 1.0 Release Notes
 
-## 2026-07-02
+- Stable KML/KMZ boundary workflow established
+- OSM and HIFLD providers verified
+- Multi-provider results merged and previewed
+- Download package verified
+- Metadata export verified
+- Experimental CAD import/export work removed from release scope
 
-Major architecture refactor completed.
+## Current Priority
 
-Implemented:
+1. Push and tag Version 1.0.
+2. Publish the static application.
+3. Verify the hosted KML/KMZ workflow.
+4. Begin Version 1.1 only from the stable Version 1.0 branch.
 
-- Plugin architecture
-- SourceManager
-- ProviderManager
-- OSM Provider
-- ArcGIS Provider framework
-- Automatic provider registration
-- County-driven provider selection
-- Source configuration (sources.json)
-- Unified provider query pipeline
-- Merge pipeline
-- Deduplication pipeline
-- Compressed nationwide county dataset
-- Utility preview from provider pipeline
+## Development Rule
 
-Current milestone:
+`main` must remain deployable and working.
 
-➡ ArcGIS FeatureServer implementation
-
-Next major milestone:
-
-➡ First working DXF export
+Experimental features should be developed in separate branches and merged only after the full Version 1.0 workflow still passes.

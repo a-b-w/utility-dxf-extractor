@@ -27,6 +27,7 @@ let utilitiesGeoJson = null;
 let statePlaneZones = [];
 let countyBoundaries = [];
 let projectionOptions = [];
+let currentBoundaryFileName = 'utility_extract';
 
 map.on('load', async () => {
     addMapLayers();
@@ -48,6 +49,8 @@ map.on('load', async () => {
 kmlFileInput.addEventListener('change', async () => {
     const file = kmlFileInput.files[0];
     if (!file) return;
+
+    currentBoundaryFileName = stripFileExtension(file.name) || 'utility_extract';
 
     try {
         resultsDiv.textContent = 'Reading boundary file...';
@@ -136,8 +139,15 @@ findUtilitiesBtn.addEventListener('click', async () => {
     }
 });
 
-downloadDxfBtn.addEventListener('click', () => {
-    downloadDxf(window.currentMergedUtilities || utilitiesGeoJson);
+downloadDxfBtn.textContent = 'Download Package';
+
+downloadDxfBtn.addEventListener('click', async () => {
+    try {
+        await downloadUtilityPackage(window.currentMergedUtilities || utilitiesGeoJson);
+    } catch (error) {
+        console.error(error);
+        alert(`Download failed: ${error.message}`);
+    }
 });
 
 function addMapLayers() {
@@ -1011,210 +1021,181 @@ function emptyFeatureCollection() {
     return { type: 'FeatureCollection', features: [] };
 }
 
-function geoJsonToDxf(geojson) {
-    const lines = [];
 
-    lines.push("0");
-    lines.push("SECTION");
-    lines.push("2");
-    lines.push("HEADER");
-    lines.push("0");
-    lines.push("ENDSEC");
+function stripFileExtension(name) {
+    return String(name || '')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80);
+}
 
-    lines.push("0");
-    lines.push("SECTION");
-    lines.push("2");
-    lines.push("TABLES");
-    lines.push("0");
-    lines.push("TABLE");
-    lines.push("2");
-    lines.push("LAYER");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_LINES");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_MINOR_LINES");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_CABLES");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_TOWERS");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_POLES");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_SUBSTATIONS");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_TRANSFORMERS");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("LAYER");
-    lines.push("2");
-    lines.push("POWER_OTHER");
-    lines.push("70");
-    lines.push("0");
-    lines.push("0");
-    lines.push("ENDTAB");
-    lines.push("0");
-    lines.push("ENDSEC");
+function escapeXml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
 
-    lines.push("0");
-    lines.push("SECTION");
-    lines.push("2");
-    lines.push("ENTITIES");
+function geometryToKml(geometry) {
+    if (!geometry) return '';
 
-    geojson.features.forEach(feature => {
-        if (!feature || !feature.geometry) return;
+    const coordText = coords => coords
+        .map(coord => `${Number(coord[0]).toFixed(8)},${Number(coord[1]).toFixed(8)},0`)
+        .join(' ');
 
-        const layer = getDxfLayer(feature);
-        const geometry = feature.geometry;
+    if (geometry.type === 'Point') {
+        return `<Point><coordinates>${coordText([geometry.coordinates])}</coordinates></Point>`;
+    }
 
-        if (geometry.type === "LineString") {
-            addDxfPolyline(lines, geometry.coordinates, layer, false);
-            return;
-        }
+    if (geometry.type === 'LineString') {
+        return `<LineString><tessellate>1</tessellate><coordinates>${coordText(geometry.coordinates)}</coordinates></LineString>`;
+    }
 
-        if (geometry.type === "MultiLineString") {
-            geometry.coordinates.forEach(path => {
-                addDxfPolyline(lines, path, layer, false);
-            });
-            return;
-        }
+    if (geometry.type === 'MultiLineString') {
+        return `<MultiGeometry>${geometry.coordinates.map(line =>
+            `<LineString><tessellate>1</tessellate><coordinates>${coordText(line)}</coordinates></LineString>`
+        ).join('')}</MultiGeometry>`;
+    }
 
-        if (geometry.type === "Polygon") {
-            geometry.coordinates.forEach(ring => {
-                addDxfPolyline(lines, ring, layer, true);
-            });
-            return;
-        }
+    if (geometry.type === 'Polygon') {
+        const [outer, ...inners] = geometry.coordinates;
+        return `<Polygon><tessellate>1</tessellate>` +
+            `<outerBoundaryIs><LinearRing><coordinates>${coordText(outer)}</coordinates></LinearRing></outerBoundaryIs>` +
+            inners.map(ring => `<innerBoundaryIs><LinearRing><coordinates>${coordText(ring)}</coordinates></LinearRing></innerBoundaryIs>`).join('') +
+            `</Polygon>`;
+    }
 
-        if (geometry.type === "MultiPolygon") {
-            geometry.coordinates.forEach(polygon => {
-                polygon.forEach(ring => {
-                    addDxfPolyline(lines, ring, layer, true);
-                });
-            });
-            return;
-        }
+    if (geometry.type === 'MultiPolygon') {
+        return `<MultiGeometry>${geometry.coordinates.map(polygon => geometryToKml({ type: 'Polygon', coordinates: polygon })).join('')}</MultiGeometry>`;
+    }
 
-        if (geometry.type === "Point") {
-            addDxfPoint(lines, geometry.coordinates, layer);
-        }
+    return '';
+}
+
+function geoJsonToKml(geojson, documentName) {
+    const placemarks = (geojson.features || []).map((feature, index) => {
+        const properties = feature.properties || {};
+        const featureName = properties.name || properties.power || `Utility ${index + 1}`;
+        const description = Object.entries(properties)
+            .filter(([, value]) => value !== null && value !== undefined && typeof value !== 'object')
+            .map(([key, value]) => `<b>${escapeXml(key)}</b>: ${escapeXml(value)}`)
+            .join('<br/>');
+
+        return `<Placemark>` +
+            `<name>${escapeXml(featureName)}</name>` +
+            `<description><![CDATA[${description}]]></description>` +
+            geometryToKml(feature.geometry) +
+            `</Placemark>`;
+    }).join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<kml xmlns="http://www.opengis.net/kml/2.2">\n` +
+        `<Document><name>${escapeXml(documentName)}</name>\n${placemarks}\n</Document></kml>`;
+}
+
+function buildMetadataText(geojson) {
+    const counts = countUtilities(geojson);
+    const projection = getSelectedProjection();
+    const providers = new Map();
+
+    (geojson.features || []).forEach(feature => {
+        const props = feature.properties || {};
+        const key = props.source || props.provider || 'Unknown';
+        providers.set(key, (providers.get(key) || 0) + 1);
     });
 
-    lines.push("0");
-    lines.push("ENDSEC");
-    lines.push("0");
-    lines.push("EOF");
+    const providerLines = [...providers.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([name, count]) => `  - ${name}: ${count}`)
+        .join('\n') || '  - None recorded';
 
-    return lines.join("\n");
+    return [
+        "Alex's Utility Extractor",
+        '===========================',
+        '',
+        `Project: ${currentBoundaryFileName}`,
+        `Created: ${new Date().toLocaleString()}`,
+        `Projection selected: ${projection ? projection.label : 'WGS84 - EPSG:4326'}`,
+        `Search mode: ${getSearchMode() === 'boundary' ? 'Uploaded boundary' : 'Current map view'}`,
+        '',
+        'Utility Results',
+        '---------------',
+        `Transmission lines: ${counts.lines}`,
+        `Towers: ${counts.towers}`,
+        `Poles: ${counts.poles}`,
+        `Substations: ${counts.substations}`,
+        `Transformers: ${counts.transformers}`,
+        `Other power features: ${counts.other}`,
+        `Total GeoJSON features: ${(geojson.features || []).length}`,
+        '',
+        'Sources / Providers',
+        '-------------------',
+        providerLines,
+        '',
+        'Package Contents',
+        '----------------',
+        `${currentBoundaryFileName}_utilities.geojson`,
+        `${currentBoundaryFileName}_utilities.kml`,
+        `${currentBoundaryFileName}_utilities.kmz`,
+        `${currentBoundaryFileName}_boundary.geojson (when a boundary was uploaded)`,
+        `${currentBoundaryFileName}_metadata.txt`,
+        '',
+        'Notes',
+        '-----',
+        '- GeoJSON and KML coordinates are WGS84 longitude/latitude (EPSG:4326).',
+        '- KMZ contains the same KML utility features in compressed form.',
+        '- DXF export is intentionally excluded from this package until the CAD writer is validated.',
+        ''
+    ].join('\n');
 }
 
-function addDxfPolyline(lines, coordinates, layer, closed = false) {
-    if (!Array.isArray(coordinates) || coordinates.length < 2) return;
-
-    lines.push("0");
-    lines.push("POLYLINE");
-    lines.push("8");
-    lines.push(layer);
-    lines.push("66");
-    lines.push("1");
-    lines.push("70");
-    lines.push(closed ? "1" : "0");
-
-    coordinates.forEach(coord => {
-        if (!Array.isArray(coord) || coord.length < 2) return;
-
-        lines.push("0");
-        lines.push("VERTEX");
-        lines.push("8");
-        lines.push(layer);
-        lines.push("10");
-        lines.push(String(coord[0]));
-        lines.push("20");
-        lines.push(String(coord[1]));
-        lines.push("30");
-        lines.push("0");
-    });
-
-    lines.push("0");
-    lines.push("SEQEND");
-}
-
-function addDxfPoint(lines, coord, layer) {
-    if (!Array.isArray(coord) || coord.length < 2) return;
-
-    const radius = 0.00005;
-
-    lines.push("0");
-    lines.push("CIRCLE");
-    lines.push("8");
-    lines.push(layer);
-    lines.push("10");
-    lines.push(String(coord[0]));
-    lines.push("20");
-    lines.push(String(coord[1]));
-    lines.push("30");
-    lines.push("0");
-    lines.push("40");
-    lines.push(String(radius));
-}
-
-function getDxfLayer(feature) {
-    const power = feature.properties?.power || "other";
-
-    if (power === "line" || power === "transmission") return "POWER_LINES";
-    if (power === "minor_line") return "POWER_MINOR_LINES";
-    if (power === "cable") return "POWER_CABLES";
-    if (power === "tower") return "POWER_TOWERS";
-    if (power === "pole") return "POWER_POLES";
-    if (power === "substation") return "POWER_SUBSTATIONS";
-    if (power === "transformer") return "POWER_TRANSFORMERS";
-
-    return "POWER_OTHER";
-}
-
-
-function downloadDxf(geojson) {
-    if (!geojson || !geojson.features || geojson.features.length === 0) {
-        alert("No utility features available to export.");
+async function downloadUtilityPackage(geojson) {
+    if (!geojson || !Array.isArray(geojson.features) || geojson.features.length === 0) {
+        alert('No utility features available to export. Run Find Utilities first.');
         return;
     }
 
-    const dxfText = geoJsonToDxf(geojson);
-    const blob = new Blob([dxfText], { type: "application/dxf" });
-    const url = URL.createObjectURL(blob);
+    if (typeof JSZip === 'undefined') {
+        throw new Error('JSZip is not loaded. Check the JSZip script in index.html.');
+    }
 
-    const link = document.createElement("a");
+    const baseName = currentBoundaryFileName || 'utility_extract';
+    const utilitiesGeoJsonText = JSON.stringify(geojson, null, 2);
+    const utilitiesKmlText = geoJsonToKml(geojson, `${baseName} Utilities`);
+    const metadataText = buildMetadataText(geojson);
+
+    const kmz = new JSZip();
+    kmz.file('doc.kml', utilitiesKmlText);
+    const kmzBlob = await kmz.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+
+    const zip = new JSZip();
+    zip.file(`${baseName}_utilities.geojson`, utilitiesGeoJsonText);
+    zip.file(`${baseName}_utilities.kml`, utilitiesKmlText);
+    zip.file(`${baseName}_utilities.kmz`, kmzBlob);
+    zip.file(`${baseName}_metadata.txt`, metadataText);
+
+    if (boundaryGeoJson && Array.isArray(boundaryGeoJson.features) && boundaryGeoJson.features.length > 0) {
+        zip.file(`${baseName}_boundary.geojson`, JSON.stringify(boundaryGeoJson, null, 2));
+        zip.file(`${baseName}_boundary.kml`, geoJsonToKml(boundaryGeoJson, `${baseName} Boundary`));
+    }
+
+    const packageBlob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+    });
+
+    const url = URL.createObjectURL(packageBlob);
+    const link = document.createElement('a');
     link.href = url;
-    link.download = "alex_utility_extract.dxf";
+    link.download = `${baseName}_utility_package.zip`;
     document.body.appendChild(link);
     link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    console.log(`Downloaded utility package with ${geojson.features.length} features.`);
 }
