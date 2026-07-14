@@ -69,10 +69,20 @@ kmlFileInput.addEventListener('change', async () => {
         map.getSource('boundary').setData(boundaryGeoJson);
         zoomToGeoJson(boundaryGeoJson);
 
+        resultsDiv.textContent = 'Boundary parsed. Detecting location...';
+        await yieldToBrowser();
+
+        const detectionStarted = performance.now();
         const detectedZone = detectStatePlaneZone(boundaryGeoJson);
-        const detectedCounty = detectCounty(boundaryGeoJson);
         const detectedCounties = detectCounties(boundaryGeoJson);
+        const detectedCounty = detectedCounties[0] || null;
         const localSources = getSourcesForCounties(detectedCounties);
+        const detectionMs = Math.round(performance.now() - detectionStarted);
+
+        console.log(
+            `Location detection completed in ${detectionMs} ms for ` +
+            `${boundaryGeoJson.features.length} boundary polygon(s).`
+        );
 
         const projection = chooseProjectionFromZone(detectedZone);
         setProjectionSearchValue(projection);
@@ -548,7 +558,8 @@ function parseCountyKml(kmlText) {
             namelsad: getSimpleDataValue(placemark, 'namelsad') || getSimpleDataValue(placemark, 'NAMELSAD') || getPlacemarkName(placemark),
             stusab: getSimpleDataValue(placemark, 'stusab') || getSimpleDataValue(placemark, 'STUSAB'),
             state_name: getSimpleDataValue(placemark, 'state_name') || getSimpleDataValue(placemark, 'STATE_NAME'),
-            coordinates
+            coordinates,
+            bbox: getCoordinateBounds(coordinates)
         });
     }
 
@@ -667,6 +678,10 @@ async function runOverpassQuery(query, attempt = 1) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function yieldToBrowser() {
+    return new Promise(resolve => requestAnimationFrame(() => resolve()));
 }
 
 async function readKmlOrKmz(file) {
@@ -883,31 +898,204 @@ function detectCounties(boundaryGeoJson) {
         return [];
     }
 
+    const started = performance.now();
+    const boundaryRings = getAllGeoJsonRings(boundaryGeoJson);
+    const boundaryBbox = getRingsBounds(boundaryRings);
+
+    if (!boundaryBbox) {
+        return [];
+    }
+
+    // Critical performance filter: only run exact geometry tests against
+    // counties whose bounding boxes overlap the uploaded boundary.
+    const candidates = countyBoundaries.filter(county =>
+        boundsOverlap(boundaryBbox, county.bbox || getCoordinateBounds(county.coordinates))
+    );
+
     const matched = [];
 
-    for (const county of countyBoundaries) {
-        if (boundaryTouchesCounty(boundaryGeoJson, county)) {
+    for (const county of candidates) {
+        if (boundaryTouchesCountyRings(boundaryRings, boundaryBbox, county)) {
             matched.push(county);
         }
     }
+
+    console.log(
+        `County detection: ${countyBoundaries.length} counties -> ` +
+        `${candidates.length} bbox candidates -> ${matched.length} matches ` +
+        `in ${Math.round(performance.now() - started)} ms.`
+    );
 
     return matched;
 }
 
 function boundaryTouchesCounty(boundaryGeoJson, county) {
-    for (const feature of boundaryGeoJson.features) {
-        const rings = getFeatureRings(feature);
+    const rings = getAllGeoJsonRings(boundaryGeoJson);
+    const boundaryBbox = getRingsBounds(rings);
 
-        for (const ring of rings) {
-            if (ring.some(coord => pointInPolygon(coord, county.coordinates))) {
+    if (!boundaryBbox) return false;
+
+    return boundaryTouchesCountyRings(rings, boundaryBbox, county);
+}
+
+function boundaryTouchesCountyRings(boundaryRings, boundaryBbox, county) {
+    const countyBbox = county.bbox || getCoordinateBounds(county.coordinates);
+
+    if (!boundsOverlap(boundaryBbox, countyBbox)) {
+        return false;
+    }
+
+    for (const ring of boundaryRings) {
+        const ringBbox = getCoordinateBounds(ring);
+
+        if (!boundsOverlap(ringBbox, countyBbox)) {
+            continue;
+        }
+
+        // A sampled point pass is enough for the common case and avoids
+        // thousands of redundant point-in-polygon calls on dense corridors.
+        for (const coord of sampleRing(ring, 96)) {
+            if (pointInPolygon(coord, county.coordinates)) {
                 return true;
             }
+        }
 
-            if (county.coordinates.some(coord => pointInPolygon(coord, ring))) {
+        for (const coord of sampleRing(county.coordinates, 96)) {
+            if (pointInPolygon(coord, ring)) {
                 return true;
             }
+        }
 
-            if (ringsIntersect(ring, county.coordinates)) {
+        if (ringsIntersectFast(ring, ringBbox, county.coordinates, countyBbox)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function getAllGeoJsonRings(geojson) {
+    const rings = [];
+
+    for (const feature of geojson.features || []) {
+        rings.push(...getFeatureRings(feature));
+    }
+
+    return rings;
+}
+
+function sampleRing(ring, maxSamples = 96) {
+    if (!Array.isArray(ring) || ring.length <= maxSamples) {
+        return ring || [];
+    }
+
+    const sampled = [];
+    const step = Math.max(1, Math.floor((ring.length - 1) / (maxSamples - 1)));
+
+    for (let i = 0; i < ring.length; i += step) {
+        sampled.push(ring[i]);
+    }
+
+    const last = ring[ring.length - 1];
+
+    if (sampled[sampled.length - 1] !== last) {
+        sampled.push(last);
+    }
+
+    return sampled;
+}
+
+function getCoordinateBounds(coordinates) {
+    if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return null;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const coord of coordinates) {
+        if (!Array.isArray(coord) || coord.length < 2) continue;
+
+        const x = Number(coord[0]);
+        const y = Number(coord[1]);
+
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+    }
+
+    return Number.isFinite(minX)
+        ? { minX, minY, maxX, maxY }
+        : null;
+}
+
+function getRingsBounds(rings) {
+    let combined = null;
+
+    for (const ring of rings || []) {
+        const bounds = getCoordinateBounds(ring);
+        if (!bounds) continue;
+
+        if (!combined) {
+            combined = { ...bounds };
+            continue;
+        }
+
+        combined.minX = Math.min(combined.minX, bounds.minX);
+        combined.minY = Math.min(combined.minY, bounds.minY);
+        combined.maxX = Math.max(combined.maxX, bounds.maxX);
+        combined.maxY = Math.max(combined.maxY, bounds.maxY);
+    }
+
+    return combined;
+}
+
+function boundsOverlap(a, b) {
+    if (!a || !b) return false;
+
+    return !(
+        a.maxX < b.minX ||
+        a.minX > b.maxX ||
+        a.maxY < b.minY ||
+        a.minY > b.maxY
+    );
+}
+
+function ringsIntersectFast(ringA, bboxA, ringB, bboxB) {
+    if (!boundsOverlap(bboxA, bboxB)) {
+        return false;
+    }
+
+    for (let i = 0; i < ringA.length - 1; i++) {
+        const a = ringA[i];
+        const b = ringA[i + 1];
+        const segmentABounds = {
+            minX: Math.min(a[0], b[0]),
+            minY: Math.min(a[1], b[1]),
+            maxX: Math.max(a[0], b[0]),
+            maxY: Math.max(a[1], b[1])
+        };
+
+        for (let j = 0; j < ringB.length - 1; j++) {
+            const c = ringB[j];
+            const d = ringB[j + 1];
+            const segmentBBounds = {
+                minX: Math.min(c[0], d[0]),
+                minY: Math.min(c[1], d[1]),
+                maxX: Math.max(c[0], d[0]),
+                maxY: Math.max(c[1], d[1])
+            };
+
+            if (!boundsOverlap(segmentABounds, segmentBBounds)) {
+                continue;
+            }
+
+            if (lineSegmentsIntersect(a, b, c, d)) {
                 return true;
             }
         }
@@ -933,15 +1121,12 @@ function getFeatureRings(feature) {
 }
 
 function ringsIntersect(ringA, ringB) {
-    for (let i = 0; i < ringA.length - 1; i++) {
-        for (let j = 0; j < ringB.length - 1; j++) {
-            if (lineSegmentsIntersect(ringA[i], ringA[i + 1], ringB[j], ringB[j + 1])) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return ringsIntersectFast(
+        ringA,
+        getCoordinateBounds(ringA),
+        ringB,
+        getCoordinateBounds(ringB)
+    );
 }
 
 function lineSegmentsIntersect(a, b, c, d) {
