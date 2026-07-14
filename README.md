@@ -74,8 +74,8 @@ utility-dxf-extractor/
 │   └── us_county_boundaries.zip
 ├── js/
 │   ├── managers/
-│   │   ├── providerManager.js
-│   │   └── sourceManager.js
+│   │   ├── providermanager.js
+│   │   └── sourcemanager.js
 │   └── providers/
 │       ├── arcgis.js
 │       ├── hifld.js
